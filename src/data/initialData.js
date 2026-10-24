@@ -2,7 +2,7 @@ export const initialWeddingData = {
   couple: {
     groom: "Julián",
     bride: "Yanet",
-    date: "2027-10-08T18:00:00",
+    date: "2027-10-09T18:00:00",
     venue: "Palacio San Souci / Jardines de la Reina",
     address: "Av. Libertador 2450, San Fernando",
     totalBudget: 25000,

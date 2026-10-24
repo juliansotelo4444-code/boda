@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "server:dev": "npm --prefix server run dev",
+    "server:push": "npm --prefix server run prisma:push",
+    "server:seed": "npm --prefix server run prisma:seed",
+    "server:studio": "npm --prefix server run prisma:studio"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",
