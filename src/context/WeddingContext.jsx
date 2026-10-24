@@ -94,12 +94,76 @@ export const WeddingProvider = ({ children }) => {
     updateGuest(guestId, { tableId });
   };
 
+  // Gestor de la Pareja y Fotos (Avatar / Portada)
+  const updateCouple = (updates) => {
+    setData(prev => ({
+      ...prev,
+      couple: {
+        ...prev.couple,
+        ...updates
+      }
+    }));
+    api.updateSettings({
+      groomName: updates.groom,
+      brideName: updates.bride,
+      heroImageUrl: updates.heroImageUrl || updates.avatarUrl,
+      weddingDate: updates.date,
+      venueName: updates.venue,
+      totalBudget: updates.totalBudget !== undefined ? Number(updates.totalBudget) : undefined,
+    }).catch(() => {});
+  };
+
   // Gestor de Mesas
   const updateTablePosition = (tableId, x, y) => {
     setData(prev => ({
       ...prev,
       tables: prev.tables.map(t => t.id === tableId ? { ...t, x, y } : t)
     }));
+  };
+
+  const updateTable = (tableId, updates) => {
+    const table = data.tables.find(t => t.id === tableId);
+    if (!table) return { success: false, error: 'Mesa no encontrada' };
+
+    // Validación estricta de aforo: No se puede reducir la capacidad por debajo de los sentados
+    if (updates.capacity !== undefined) {
+      const seatedOccupants = data.guests.filter(g => g.tableId === tableId);
+      const totalOccupants = seatedOccupants.reduce((sum, g) => sum + 1 + (Number(g.companions) || 0), 0);
+      if (Number(updates.capacity) < totalOccupants) {
+        const names = seatedOccupants.map(g => `${g.name}${g.companions ? ` (+${g.companions})` : ''}`).join(', ');
+        return {
+          success: false,
+          error: `Capacidad insuficiente: Hay ${totalOccupants} personas asignadas a esta mesa (${names}). Reubica invitados antes de reducir la capacidad máxima a ${updates.capacity}.`
+        };
+      }
+    }
+
+    setData(prev => ({
+      ...prev,
+      tables: prev.tables.map(t => t.id === tableId ? { ...t, ...updates } : t)
+    }));
+
+    if (!tableId.startsWith('t_')) {
+      api.updateTable(tableId, {
+        name: updates.name,
+        capacity: updates.capacity !== undefined ? Number(updates.capacity) : undefined,
+        shape: updates.shape,
+      }).catch(() => {});
+    }
+
+    return { success: true };
+  };
+
+  const deleteTable = (tableId) => {
+    setData(prev => ({
+      ...prev,
+      guests: prev.guests.map(g => g.tableId === tableId ? { ...g, tableId: null } : g),
+      tables: prev.tables.filter(t => t.id !== tableId)
+    }));
+
+    if (!tableId.startsWith('t_')) {
+      api.deleteTable(tableId).catch(() => {});
+    }
   };
 
   const addTable = (table) => {
@@ -109,10 +173,42 @@ export const WeddingProvider = ({ children }) => {
       x: table.x || 300,
       y: table.y || 200,
       shape: table.shape || 'round',
-      capacity: table.capacity || 10,
+      capacity: Number(table.capacity) || 10,
       color: '#9B1D3D'
     };
     setData(prev => ({ ...prev, tables: [...prev.tables, newTable] }));
+  };
+
+  // Gestor de Menú & Catering
+  const updateCatering = (updates) => {
+    setData(prev => ({
+      ...prev,
+      catering: {
+        ...prev.catering,
+        ...updates
+      }
+    }));
+  };
+
+  const addMenuItem = (section, item) => {
+    const newItem = { ...item, id: `m_${Date.now()}` };
+    setData(prev => ({
+      ...prev,
+      catering: {
+        ...prev.catering,
+        [section]: [...(prev.catering?.[section] || []), newItem]
+      }
+    }));
+  };
+
+  const deleteMenuItem = (section, itemId) => {
+    setData(prev => ({
+      ...prev,
+      catering: {
+        ...prev.catering,
+        [section]: (prev.catering?.[section] || []).filter(i => i.id !== itemId)
+      }
+    }));
   };
 
   // Gestor de Tareas
@@ -276,8 +372,14 @@ export const WeddingProvider = ({ children }) => {
       updateGuest,
       deleteGuest,
       assignGuestToTable,
+      updateCouple,
       updateTablePosition,
+      updateTable,
+      deleteTable,
       addTable,
+      updateCatering,
+      addMenuItem,
+      deleteMenuItem,
       toggleTask,
       addTask,
       addBudgetItem,

@@ -3,6 +3,7 @@ import { WeddingProvider } from './context/WeddingContext';
 import { Navbar } from './components/Navbar';
 import { Dashboard } from './components/Dashboard';
 import { GuestManagement } from './components/GuestManagement';
+import { CateringManager } from './components/CateringManager';
 import { CollaborativeAlbum } from './components/CollaborativeAlbum';
 import { InvitationsWebBuilder } from './components/InvitationsWebBuilder';
 import { TodoList } from './components/TodoList';
@@ -43,6 +44,7 @@ function AppContent() {
               />
             )}
             {activeTab === 'guests' && <GuestManagement />}
+            {activeTab === 'catering' && <CateringManager />}
             {activeTab === 'invitations' && (
               <InvitationsWebBuilder setViewMode={setViewMode} />
             )}
@@ -59,7 +61,7 @@ function AppContent() {
       <footer className="app-footer">
         <div className="footer-content">
           <p className="footer-love">
-            Diseñado con amor y distinción para <strong>Julián &amp; Yanet</strong> • 8 de Octubre de 2027
+            Diseñado con amor y distinción para <strong>Julián &amp; Yanet</strong> • 9 de Octubre de 2027
           </p>
           <span className="footer-palette-hint">
             Paleta Oficial: Borgoña Imperial &amp; Champagne Oro

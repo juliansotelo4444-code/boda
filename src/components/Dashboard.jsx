@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Calendar, CheckCircle, AlertTriangle, ArrowRight, DollarSign, Users, Sparkles, Heart, Camera } from 'lucide-react';
 import { useWedding } from '../context/WeddingContext';
+import { ProfilePhotoModal } from './ProfilePhotoModal';
 
 export const Dashboard = ({ setActiveTab, setViewMode }) => {
   const { data, toggleTask } = useWedding();
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
   const targetDate = new Date(data.couple?.date || '2027-10-09T18:00:00');
 
   // Cálculo de cuenta regresiva
@@ -49,7 +51,14 @@ export const Dashboard = ({ setActiveTab, setViewMode }) => {
   return (
     <div className="dashboard-container animate-fade-in">
       {/* HERO BANNER EDITORIAL */}
-      <section className="hero-wedding-card">
+      <section 
+        className="hero-wedding-card" 
+        style={{ 
+          backgroundImage: `url(${data.couple?.heroImageUrl || '/assets/hero-bg.jpg'})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      >
         <div className="hero-overlay"></div>
         <div className="hero-content">
           <div className="hero-top-badge">
@@ -62,7 +71,7 @@ export const Dashboard = ({ setActiveTab, setViewMode }) => {
             El camino hacia <span className="highlight-script">Nuestro Gran Día</span>
           </h2>
           <p className="hero-subtext">
-            Viernes, 8 de Octubre de 2027 • Palacio San Souci &amp; Jardines de la Reina
+            Sábado, 9 de Octubre de 2027 • {data.couple?.venue || 'Palacio San Souci & Jardines de la Reina'}
           </p>
 
           {/* CUENTA REGRESIVA ELEGANTE */}
@@ -92,9 +101,21 @@ export const Dashboard = ({ setActiveTab, setViewMode }) => {
             <button className="btn-outline-champagne" onClick={() => setActiveTab('invitations')}>
               Editar Invitación Digital
             </button>
+            <button
+              className="btn-secondary"
+              onClick={() => setIsPhotoModalOpen(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            >
+              <Camera size={15} /> Cambiar Foto Portada / Perfil
+            </button>
           </div>
         </div>
       </section>
+
+      <ProfilePhotoModal
+        isOpen={isPhotoModalOpen}
+        onClose={() => setIsPhotoModalOpen(false)}
+      />
 
       {/* GRILLA PRINCIPAL DE WIDGETS */}
       <div className="widgets-grid">

@@ -1,13 +1,16 @@
-import React from 'react';
-import { Heart, Bell, Eye, LayoutDashboard, Users, Image as ImageIcon, CheckSquare, DollarSign, Compass, Sparkles, Mail, RotateCcw } from 'lucide-react';
+import React, { useState } from 'react';
+import { Heart, Bell, Eye, LayoutDashboard, Users, Image as ImageIcon, CheckSquare, DollarSign, Compass, Sparkles, Mail, RotateCcw, Utensils, Camera } from 'lucide-react';
 import { useWedding } from '../context/WeddingContext';
+import { ProfilePhotoModal } from './ProfilePhotoModal';
 
 export const Navbar = ({ activeTab, setActiveTab, viewMode, setViewMode }) => {
-  const { requestNotificationPermission, notificationPermission, sendTestNotification, resetToZero } = useWedding();
+  const { data, requestNotificationPermission, notificationPermission, sendTestNotification, resetToZero } = useWedding();
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'guests', label: 'Invitados & Mesas', icon: Users },
+    { id: 'catering', label: 'Menú & Banquete', icon: Utensils },
     { id: 'invitations', label: 'Invitación & Web', icon: Mail },
     { id: 'album', label: 'Álbum en Vivo', icon: ImageIcon },
     { id: 'tasks', label: 'Cronograma', icon: CheckSquare },
@@ -76,12 +79,43 @@ export const Navbar = ({ activeTab, setActiveTab, viewMode, setViewMode }) => {
             <span>{notificationPermission === 'granted' ? 'Push Activo' : 'Activar Alertas'}</span>
           </button>
 
-          <div className="couple-avatar-wrap">
-            <img src="/assets/couple.jpg" alt="Julián & Yanet" className="couple-avatar-img" />
-            <div className="couple-tag">8 Oct 2027</div>
+          <div
+            className="couple-avatar-wrap"
+            onClick={() => setIsPhotoModalOpen(true)}
+            title="Haz clic para cambiar la foto de perfil o portada"
+            style={{ cursor: 'pointer', position: 'relative' }}
+          >
+            <img
+              src={data.couple?.avatarUrl || '/assets/couple.jpg'}
+              alt="Julián & Yanet"
+              className="couple-avatar-img"
+            />
+            <div className="couple-tag">9 Oct 2027</div>
+            <div style={{
+              position: 'absolute',
+              bottom: '-2px',
+              right: '-2px',
+              background: 'var(--burgundy-700)',
+              color: '#FFF',
+              borderRadius: '50%',
+              width: '18px',
+              height: '18px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1.5px solid var(--gold-400)',
+              boxShadow: '0 2px 5px rgba(0,0,0,0.3)'
+            }}>
+              <Camera size={10} />
+            </div>
           </div>
         </div>
       </div>
+
+      <ProfilePhotoModal
+        isOpen={isPhotoModalOpen}
+        onClose={() => setIsPhotoModalOpen(false)}
+      />
 
       {/* Barra de Pestañas (Solo visible en Modo Administración de Novios) */}
       {viewMode === 'admin' && (

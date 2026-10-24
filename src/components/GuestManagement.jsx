@@ -3,12 +3,23 @@ import { Users, Plus, Search, Filter, Move, Trash2, Edit2, CheckCircle, Clock, X
 import { useWedding } from '../context/WeddingContext';
 
 export const GuestManagement = () => {
-  const { data, addGuest, updateGuest, deleteGuest, assignGuestToTable, updateTablePosition, addTable } = useWedding();
+  const { data, addGuest, updateGuest, deleteGuest, assignGuestToTable, updateTablePosition, updateTable, deleteTable, addTable } = useWedding();
   const [activeSubTab, setActiveSubTab] = useState('floor'); // 'floor' | 'list'
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [selectedTableId, setSelectedTableId] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [tableCapacityError, setTableCapacityError] = useState(null);
+
+  const handleTableCapacityChange = (tableId, newCapacity) => {
+    if (newCapacity < 1) return;
+    const res = updateTable(tableId, { capacity: Number(newCapacity) });
+    if (!res.success) {
+      setTableCapacityError(res.error);
+    } else {
+      setTableCapacityError(null);
+    }
+  };
 
   // Formulario nuevo invitado
   const [newGuestForm, setNewGuestForm] = useState({
@@ -186,12 +197,151 @@ export const GuestManagement = () => {
           <div className="floorplan-sidebar card-luxury">
             {selectedTable ? (
               <div className="table-details-panel">
-                <div className="panel-title-wrap">
-                  <span className="badge-burgundy badge">{selectedTable.shape.toUpperCase()}</span>
-                  <h3 className="selected-table-name font-serif">{selectedTable.name}</h3>
-                  <p className="table-capacity-status">
-                    Capacidad: <strong>{seatedGuests.reduce((acc, g) => acc + 1 + (g.companions || 0), 0)} / {selectedTable.capacity} asientos</strong>
-                  </p>
+                {/* CONFIGURACIÓN EDITABLE DE LA MESA */}
+                <div className="panel-title-wrap" style={{ borderBottom: '1px solid #EDE7DF', paddingBottom: '1rem', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
+                    <span className="badge-burgundy badge">{selectedTable.shape.toUpperCase()}</span>
+                    <button
+                      className="btn-icon-subtle"
+                      title="Eliminar mesa del salón"
+                      onClick={() => {
+                        if (window.confirm(`¿Estás seguro de eliminar la mesa "${selectedTable.name}"? Los invitados asignados volverán a estar sin mesa.`)) {
+                          deleteTable(selectedTable.id);
+                          setSelectedTableId(null);
+                        }
+                      }}
+                      style={{ color: '#DC2626', fontSize: '0.8rem', padding: '0.3rem 0.6rem' }}
+                    >
+                      🗑️ Eliminar Mesa
+                    </button>
+                  </div>
+
+                  {/* Nombre editable de la mesa */}
+                  <div style={{ marginBottom: '0.8rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.2rem' }}>
+                      NOMBRE DE LA MESA:
+                    </label>
+                    <input
+                      type="text"
+                      className="input-luxury"
+                      value={selectedTable.name}
+                      onChange={(e) => updateTable(selectedTable.id, { name: e.target.value })}
+                      style={{ fontSize: '1rem', fontWeight: 700, padding: '0.4rem 0.6rem', color: 'var(--burgundy-900)' }}
+                    />
+                  </div>
+
+                  {/* Selector de Forma */}
+                  <div style={{ marginBottom: '0.8rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.3rem' }}>
+                      FORMA DE LA MESA:
+                    </label>
+                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                      {[
+                        { id: 'round', label: '⭕ Redonda' },
+                        { id: 'rectangular', label: '▭ Rectangular' },
+                        { id: 'presidential', label: '👑 Nupcial' }
+                      ].map(shape => (
+                        <button
+                          key={shape.id}
+                          type="button"
+                          onClick={() => updateTable(selectedTable.id, { shape: shape.id })}
+                          style={{
+                            flex: 1,
+                            padding: '0.35rem',
+                            fontSize: '0.75rem',
+                            fontWeight: selectedTable.shape === shape.id ? 700 : 500,
+                            borderRadius: '6px',
+                            border: selectedTable.shape === shape.id ? '2px solid var(--burgundy-700)' : '1px solid #DDD',
+                            background: selectedTable.shape === shape.id ? 'var(--burgundy-50)' : '#FFF',
+                            color: selectedTable.shape === shape.id ? 'var(--burgundy-800)' : 'var(--text-secondary)',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {shape.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* CONTROL DE CAPACIDAD MÁXIMA (+ / -) */}
+                  <div style={{ background: '#FAF7F5', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-gold-subtle)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <span style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--burgundy-900)' }}>
+                          CAPACIDAD MÁXIMA
+                        </span>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                          Comensales: <strong>{seatedGuests.reduce((acc, g) => acc + 1 + (Number(g.companions) || 0), 0)} ocupados</strong>
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleTableCapacityChange(selectedTable.id, (selectedTable.capacity || 10) - 1)}
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '6px',
+                            border: '1px solid #CCC',
+                            background: '#FFF',
+                            cursor: 'pointer',
+                            fontWeight: 700,
+                            fontSize: '1.1rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          -
+                        </button>
+
+                        <input
+                          type="number"
+                          value={selectedTable.capacity || 10}
+                          onChange={(e) => handleTableCapacityChange(selectedTable.id, Number(e.target.value))}
+                          min="1"
+                          max="30"
+                          style={{
+                            width: '45px',
+                            textAlign: 'center',
+                            fontWeight: 700,
+                            fontSize: '1rem',
+                            border: '1px solid var(--border-gold)',
+                            borderRadius: '6px',
+                            padding: '0.25rem'
+                          }}
+                        />
+
+                        <button
+                          type="button"
+                          onClick={() => handleTableCapacityChange(selectedTable.id, (selectedTable.capacity || 10) + 1)}
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '6px',
+                            border: '1px solid #CCC',
+                            background: '#FFF',
+                            cursor: 'pointer',
+                            fontWeight: 700,
+                            fontSize: '1.1rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* ALERTA DE VALIDACIÓN SI INTENTA REDUCIR POR DEBAJO DE LOS SENTADOS */}
+                    {tableCapacityError && (
+                      <div style={{ marginTop: '0.6rem', padding: '0.5rem', borderRadius: '6px', background: '#FEE2E2', border: '1px solid #FCA5A5', color: '#991B1B', fontSize: '0.75rem', lineHeight: 1.3 }}>
+                        ⚠️ {tableCapacityError}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="seated-guests-list">
