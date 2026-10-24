@@ -1,10 +1,19 @@
 import React, { useState } from 'react';
-import { Compass, Plane, Car, Home, Sun, MapPin, Plus, ExternalLink, Calendar, Check } from 'lucide-react';
+import { Compass, Plane, Car, Home, Sun, MapPin, Plus, ExternalLink, Calendar, Check, Edit2, Save, X } from 'lucide-react';
 import { useWedding } from '../context/WeddingContext';
 
 export const HoneymoonPlanner = () => {
-  const { data, addHoneymoonItem } = useWedding();
+  const { data, addHoneymoonItem, updateHoneymoon } = useWedding();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditDestinationModal, setShowEditDestinationModal] = useState(false);
+
+  const [destForm, setDestForm] = useState({
+    destination: data.honeymoon?.destination || 'Neuquén, Patagonia Argentina',
+    dates: data.honeymoon?.dates || 'Octubre 2027',
+    budget: data.honeymoon?.budget || 5000,
+    description: data.honeymoon?.description || 'Ruta de los Siete Lagos, bodegas patagónicas y paisajes andinos de ensueño.',
+  });
+
   const [newItem, setNewItem] = useState({
     type: 'Hotel',
     title: '',
@@ -14,7 +23,13 @@ export const HoneymoonPlanner = () => {
     status: 'Planificado'
   });
 
-  const totalCost = data.honeymoon.items.reduce((acc, curr) => acc + (Number(curr.cost) || 0), 0);
+  const totalCost = (data.honeymoon?.items || []).reduce((acc, curr) => acc + (Number(curr.cost) || 0), 0);
+
+  const handleSaveDestination = (e) => {
+    e.preventDefault();
+    updateHoneymoon(destForm);
+    setShowEditDestinationModal(false);
+  };
 
   const handleAddItem = (e) => {
     e.preventDefault();
@@ -38,30 +53,136 @@ export const HoneymoonPlanner = () => {
       <div className="module-top-bar">
         <div>
           <span className="module-kicker">VIAJE NUPCIAL DE LOS NOVIOS</span>
-          <h2 className="module-title font-serif">Luna de Miel: {data.honeymoon.destination}</h2>
+          <h2 className="module-title font-serif">Luna de Miel: {data.honeymoon?.destination || 'Neuquén'}</h2>
           <p className="honeymoon-dates">
-            📅 {data.honeymoon.dates} • Presupuesto asignado: ${data.honeymoon.budget.toLocaleString()} USD
+            📅 {data.honeymoon?.dates || 'Octubre 2027'} • Presupuesto asignado: ${(data.honeymoon?.budget || 5000).toLocaleString()} USD
           </p>
         </div>
 
-        <button className="btn-primary" onClick={() => setShowAddModal(true)}>
-          <Plus size={16} /> Añadir Reserva / Actividad
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button
+            className="btn-secondary"
+            onClick={() => {
+              setDestForm({
+                destination: data.honeymoon?.destination || 'Neuquén, Patagonia Argentina',
+                dates: data.honeymoon?.dates || 'Octubre 2027',
+                budget: data.honeymoon?.budget || 5000,
+                description: data.honeymoon?.description || 'Ruta de los Siete Lagos, bodegas patagónicas y paisajes andinos de ensueño.',
+              });
+              setShowEditDestinationModal(true);
+            }}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.6rem 1rem' }}
+          >
+            <Edit2 size={16} /> Editar Destino
+          </button>
+          <button className="btn-primary" onClick={() => setShowAddModal(true)}>
+            <Plus size={16} /> Añadir Reserva / Actividad
+          </button>
+        </div>
       </div>
 
-      {/* TARJETA DESTINO DESTACADO */}
-      <div className="destination-banner card-burgundy">
+      {/* TARJETA DESTINO DESTACADO DINÁMICA */}
+      <div className="destination-banner card-burgundy" style={{ position: 'relative' }}>
         <div className="destination-content">
           <span className="tag-honeymoon">PRIMER VIAJE COMO ESPOSOS</span>
-          <h3 className="dest-title font-serif">Ruta Romántica por Italia</h3>
+          <h3 className="dest-title font-serif">{data.honeymoon?.destination || 'Neuquén, Patagonia Argentina'}</h3>
           <p className="dest-sub font-display">
-            Roma antigua • Paseos costeros por Positano y Ravello • Velero al atardecer en Capri
+            {data.honeymoon?.description || 'Ruta de los Siete Lagos, bodegas patagónicas y paisajes andinos de ensueño.'}
           </p>
           <div className="cost-summary-pill">
             <span>Inversión Estimada: <strong>${totalCost.toLocaleString()} USD</strong></span>
           </div>
         </div>
       </div>
+
+      {/* MODAL EDITAR DESTINO */}
+      {showEditDestinationModal && (
+        <div className="modal-overlay animate-fade-in">
+          <div className="modal-luxury card-luxury" style={{ maxWidth: '520px', width: '90%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <h3 className="font-serif" style={{ color: 'var(--burgundy-700)', fontSize: '1.3rem', margin: 0 }}>
+                Editar Información de Luna de Miel
+              </h3>
+              <button
+                onClick={() => setShowEditDestinationModal(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveDestination}>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.35rem' }}>
+                  Destino / Región:
+                </label>
+                <input
+                  type="text"
+                  className="input-luxury"
+                  value={destForm.destination}
+                  onChange={(e) => setDestForm({ ...destForm, destination: e.target.value })}
+                  placeholder="Ej: Neuquén, Patagonia Argentina"
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.35rem' }}>
+                    Fechas estimadas:
+                  </label>
+                  <input
+                    type="text"
+                    className="input-luxury"
+                    value={destForm.dates}
+                    onChange={(e) => setDestForm({ ...destForm, dates: e.target.value })}
+                    placeholder="Ej: Octubre 2027"
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.35rem' }}>
+                    Presupuesto (USD):
+                  </label>
+                  <input
+                    type="number"
+                    className="input-luxury"
+                    value={destForm.budget}
+                    onChange={(e) => setDestForm({ ...destForm, budget: Number(e.target.value) })}
+                    min="0"
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.35rem' }}>
+                  Descripción / Narrativa del Viaje:
+                </label>
+                <textarea
+                  className="input-luxury"
+                  rows={3}
+                  value={destForm.description}
+                  onChange={(e) => setDestForm({ ...destForm, description: e.target.value })}
+                  placeholder="Describe la ruta, paradas o actividades soñadas..."
+                  style={{ resize: 'vertical' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setShowEditDestinationModal(false)}
+                >
+                  Cancelar
+                </button>
+                <button type="submit" className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Save size={16} /> Guardar Cambios
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* GRILLA DE RESERVAS E ITINERARIO */}
       {data.honeymoon.items.length === 0 ? (

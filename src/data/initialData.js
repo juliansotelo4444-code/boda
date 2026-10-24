@@ -27,9 +27,10 @@ export const initialWeddingData = {
   songs: [],
 
   honeymoon: {
-    destination: "Costa Amalfitana & Roma, Italia",
+    destination: "Neuquén, Patagonia Argentina",
     dates: "Octubre 2027",
     budget: 5000,
+    description: "Ruta de los Siete Lagos, bodegas patagónicas y paisajes andinos de ensueño.",
     items: []
   }
 };

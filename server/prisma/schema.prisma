@@ -21,21 +21,28 @@ model AdminUser {
 }
 
 model WeddingSettings {
-  id             String   @id @default("singleton")
-  groomName      String   @default("Julián")
-  brideName      String   @default("Yanet")
-  weddingDate    DateTime @default("2027-10-09T18:00:00.000Z")
-  venueName      String   @default("Palacio San Souci / Jardines de la Reina")
-  venueAddress   String   @default("Av. Libertador 2450, San Fernando")
-  primaryColor   String   @default("#67001A") // Burgundy elegante
-  secondaryColor String   @default("#D4AF37") // Champagne / Oro cálido
-  totalBudget    Decimal  @default(25000.00) @db.Decimal(12, 2)
-  currency       String   @default("USD")
-  isRsvpOpen     Boolean  @default(true)
-  heroTitle      String?  @default("Nos Casamos")
-  heroSubtitle   String?  @default("Acompáñanos a celebrar nuestro gran día")
-  welcomeText    String?  @db.Text
-  updatedAt      DateTime @updatedAt
+  id                   String   @id @default("singleton")
+  groomName            String   @default("Julián")
+  brideName            String   @default("Yanet")
+  weddingDate          DateTime @default("2027-10-09T18:00:00.000Z")
+  venueName            String   @default("Palacio San Souci / Jardines de la Reina")
+  venueAddress         String   @default("Av. Libertador 2450, San Fernando")
+  primaryColor         String   @default("#67001A") // Burgundy elegante
+  secondaryColor       String   @default("#D4AF37") // Champagne / Oro cálido
+  totalBudget          Decimal  @default(25000.00) @db.Decimal(12, 2)
+  currency             String   @default("USD")
+  isRsvpOpen           Boolean  @default(true)
+  heroImageUrl         String?  @default("/assets/hero-bg.jpg")
+  heroTitle            String?  @default("Nos Casamos")
+  heroSubtitle         String?  @default("Acompáñanos a celebrar nuestro gran día")
+  welcomeText          String?  @db.Text
+  honeymoonDestination String   @default("Neuquén, Patagonia Argentina")
+  honeymoonDates       String?  @default("Octubre 2027")
+  honeymoonDescription String?  @db.Text
+  honeymoonBudget      Decimal  @default(5000.00) @db.Decimal(12, 2)
+  storyHeadline        String?  @default("Nuestra Historia — Julián & Yanet")
+  storyNarrative       String?  @db.Text
+  updatedAt            DateTime @updatedAt
 }
 
 // -------------------------------------------------------------

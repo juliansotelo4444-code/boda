@@ -4,7 +4,7 @@ import { useWedding } from '../context/WeddingContext';
 
 export const Dashboard = ({ setActiveTab, setViewMode }) => {
   const { data, toggleTask } = useWedding();
-  const targetDate = new Date('2027-10-08T18:00:00');
+  const targetDate = new Date(data.couple?.date || '2027-10-09T18:00:00');
 
   // Cálculo de cuenta regresiva
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });

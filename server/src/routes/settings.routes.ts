@@ -16,9 +16,16 @@ const UpdateSettingsSchema = z.object({
   totalBudget: z.number().nonnegative().optional(),
   currency: z.string().optional(),
   isRsvpOpen: z.boolean().optional(),
+  heroImageUrl: z.string().optional().nullable(),
   heroTitle: z.string().optional(),
   heroSubtitle: z.string().optional(),
-  welcomeText: z.string().optional(),
+  welcomeText: z.string().optional().nullable(),
+  honeymoonDestination: z.string().optional(),
+  honeymoonDates: z.string().optional().nullable(),
+  honeymoonDescription: z.string().optional().nullable(),
+  honeymoonBudget: z.number().nonnegative().optional(),
+  storyHeadline: z.string().optional().nullable(),
+  storyNarrative: z.string().optional().nullable(),
 });
 
 // GET /api/settings (Público / Admin)

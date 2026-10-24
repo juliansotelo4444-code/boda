@@ -201,6 +201,25 @@ export const WeddingProvider = ({ children }) => {
   };
 
   // Luna de Miel
+  const updateHoneymoon = (updates) => {
+    setData(prev => ({
+      ...prev,
+      honeymoon: {
+        ...prev.honeymoon,
+        ...updates
+      }
+    }));
+    // Persistir en backend
+    api.updateSettings({
+      honeymoonDestination: updates.destination,
+      honeymoonDates: updates.dates,
+      honeymoonDescription: updates.description,
+      honeymoonBudget: updates.budget !== undefined ? Number(updates.budget) : undefined,
+    }).catch((err) => {
+      console.warn('No se pudo guardar la luna de miel en la nube:', err.message);
+    });
+  };
+
   const addHoneymoonItem = (item) => {
     const newItem = {
       ...item,
@@ -267,6 +286,7 @@ export const WeddingProvider = ({ children }) => {
       togglePhotoLike,
       addSong,
       voteSong,
+      updateHoneymoon,
       addHoneymoonItem,
       notificationPermission,
       requestNotificationPermission,

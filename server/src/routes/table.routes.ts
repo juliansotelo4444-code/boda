@@ -69,7 +69,52 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 router.put('/:id', async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const data = TableSchema.partial().parse(req.body);
+    const body = {
+      ...req.body,
+      capacity: req.body.capacidadMaxima !== undefined ? req.body.capacidadMaxima : req.body.capacity,
+    };
+    const data = TableSchema.partial().parse(body);
+
+    // Validación de negocio: Verificar si la mesa existe y calcular comensales sentados
+    const existingTable = await prisma.table.findUnique({
+      where: { id },
+      include: {
+        guests: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            plusOnesConfirmed: true,
+          },
+        },
+      },
+    });
+
+    if (!existingTable) {
+      res.status(404).json({ error: 'Mesa no encontrada' });
+      return;
+    }
+
+    if (data.capacity !== undefined) {
+      // Total de personas sentadas (cada invitado + acompañantes confirmados)
+      const totalOccupiedSeats = existingTable.guests.reduce(
+        (sum, g) => sum + 1 + (g.plusOnesConfirmed || 0),
+        0
+      );
+
+      if (data.capacity < totalOccupiedSeats) {
+        const guestNames = existingTable.guests
+          .map((g) => `${g.firstName} ${g.lastName}${g.plusOnesConfirmed > 0 ? ` (+${g.plusOnesConfirmed})` : ''}`)
+          .join(', ');
+
+        res.status(400).json({
+          error: `Capacidad insuficiente: No puedes reducir la capacidad a ${data.capacity}. Actualmente hay ${totalOccupiedSeats} personas asignadas a esta mesa (${guestNames}). Reasigna invitados antes de reducir la capacidad máxima.`,
+          occupiedSeats: totalOccupiedSeats,
+          requestedCapacity: data.capacity,
+        });
+        return;
+      }
+    }
 
     const updated = await prisma.table.update({
       where: { id },
