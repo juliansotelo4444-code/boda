@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { initialWeddingData } from '../data/initialData';
+import { api } from '../services/api';
 
 const WeddingContext = createContext(null);
 
@@ -17,6 +18,42 @@ export const WeddingProvider = ({ children }) => {
     }
     return initialWeddingData;
   });
+
+  const [isCloudConnected, setIsCloudConnected] = useState(false);
+
+  // Sincronizar con Neon Backend al montar
+  useEffect(() => {
+    let isMounted = true;
+    api.getPublicWeddingInfo()
+      .then((info) => {
+        if (!isMounted || !info) return;
+        setIsCloudConnected(true);
+        if (info.settings) {
+          setData((prev) => ({
+            ...prev,
+            couple: {
+              ...prev.couple,
+              groom: info.settings.groomName || prev.couple.groom,
+              bride: info.settings.brideName || prev.couple.bride,
+              date: info.settings.weddingDate || prev.couple.date,
+              venue: info.settings.venueName || prev.couple.venue,
+              address: info.settings.venueAddress || prev.couple.address,
+              totalBudget: Number(info.settings.totalBudget) || prev.couple.totalBudget,
+              currency: info.settings.currency || prev.couple.currency,
+            },
+            timeline: info.timeline || prev.timeline || [],
+            storyMilestones: info.story || prev.storyMilestones || [],
+          }));
+        }
+      })
+      .catch((err) => {
+        console.info('Backend Neon local no disponible aún, usando almacenamiento local:', err.message);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Guardar en localStorage ante cambios
   useEffect(() => {
@@ -234,6 +271,7 @@ export const WeddingProvider = ({ children }) => {
       notificationPermission,
       requestNotificationPermission,
       sendTestNotification,
+      isCloudConnected,
       resetToZero
     }}>
       {children}
