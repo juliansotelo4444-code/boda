@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Upload, Heart, Maximize2, X, Play, Pause, Sparkles, Check, Image as ImageIcon } from 'lucide-react';
+import { Camera, Upload, Heart, Maximize2, X, Play, Pause, Sparkles, Check, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { useWedding } from '../context/WeddingContext';
 
 export const CollaborativeAlbum = () => {
-  const { data, addPhoto, togglePhotoLike } = useWedding();
+  const { data, addPhoto, deletePhoto, togglePhotoLike } = useWedding();
   const [uploaderName, setUploaderName] = useState('');
   const [caption, setCaption] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -214,13 +214,33 @@ export const CollaborativeAlbum = () => {
                   </div>
                   <p className="photo-caption">{photo.caption}</p>
 
-                  <div className="photo-footer-actions">
+                  <div className="photo-footer-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <button 
                       className="like-btn"
                       onClick={() => togglePhotoLike(photo.id)}
                     >
                       <Heart size={16} fill="var(--burgundy-700)" color="var(--burgundy-700)" />
                       <span>{photo.likes}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm(`¿Deseas eliminar esta foto de "${photo.uploader}"?`)) {
+                          deletePhoto(photo.id);
+                        }
+                      }}
+                      title="Eliminar foto"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'var(--text-muted)',
+                        padding: '0.3rem',
+                        transition: 'color 0.15s ease'
+                      }}
+                    >
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 </div>

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { CheckSquare, Plus, Bell, Calendar, User, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { CheckSquare, Plus, Bell, Calendar, User, AlertCircle, CheckCircle, Clock, Trash2, Edit2, X, Save } from 'lucide-react';
 import { useWedding } from '../context/WeddingContext';
 
 export const TodoList = () => {
-  const { data, toggleTask, addTask, sendTestNotification, notificationPermission, requestNotificationPermission } = useWedding();
+  const { data, toggleTask, addTask, updateTask, deleteTask, sendTestNotification, notificationPermission, requestNotificationPermission } = useWedding();
   const [filterAssigned, setFilterAssigned] = useState('todos');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
 
   const [newTaskForm, setNewTaskForm] = useState({
     title: '',
@@ -191,30 +192,164 @@ export const TodoList = () => {
               {task.completed && <CheckCircle size={18} color="#fff" />}
             </button>
 
-            <div className="task-content-main">
-              <div className="task-title-row">
-                <h4 className="task-heading">{task.title}</h4>
-                <span className={`priority-tag ${task.priority.toLowerCase()}`}>
-                  {task.priority}
-                </span>
+            <div className="task-content-main" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
+              <div style={{ flex: 1 }}>
+                <div className="task-title-row">
+                  <h4 className="task-heading">{task.title}</h4>
+                  <span className={`priority-tag ${task.priority.toLowerCase()}`}>
+                    {task.priority}
+                  </span>
+                </div>
+
+                <div className="task-meta-details">
+                  <span className="meta-item">
+                    <Calendar size={14} /> Fecha Límite: <strong>{task.dueDate}</strong>
+                  </span>
+                  <span className="meta-item">
+                    <User size={14} /> Responsable: <strong>{task.assignedTo}</strong>
+                  </span>
+                  <span className="meta-item category-badge">
+                    🏷️ {task.category}
+                  </span>
+                </div>
               </div>
 
-              <div className="task-meta-details">
-                <span className="meta-item">
-                  <Calendar size={14} /> Fecha Límite: <strong>{task.dueDate}</strong>
-                </span>
-                <span className="meta-item">
-                  <User size={14} /> Responsable: <strong>{task.assignedTo}</strong>
-                </span>
-                <span className="meta-item category-badge">
-                  🏷️ {task.category}
-                </span>
+              {/* Botones de Editar y Eliminar Tarea */}
+              <div style={{ display: 'flex', gap: '0.4rem', marginLeft: '1rem' }}>
+                <button
+                  type="button"
+                  className="btn-icon-subtle"
+                  title="Editar tarea"
+                  onClick={() => setEditingTask(task)}
+                  style={{ color: 'var(--text-secondary)', padding: '0.3rem' }}
+                >
+                  <Edit2 size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="btn-icon-subtle"
+                  title="Eliminar tarea"
+                  onClick={() => {
+                    if (window.confirm(`¿Estás seguro de eliminar la tarea "${task.title}"?`)) {
+                      deleteTask(task.id);
+                    }
+                  }}
+                  style={{ color: '#DC2626', padding: '0.3rem' }}
+                >
+                  <Trash2 size={16} />
+                </button>
               </div>
             </div>
           </div>
         ))
       )}
       </div>
+
+      {/* MODAL PARA EDITAR TAREA EXISTENTE */}
+      {editingTask && (
+        <div className="modal-overlay animate-fade-in" style={{ zIndex: 9999 }}>
+          <div className="modal-luxury card-luxury" style={{ maxWidth: '480px', width: '90%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <h3 className="font-serif" style={{ color: 'var(--burgundy-800)', fontSize: '1.3rem', margin: 0 }}>
+                Editar Tarea del Cronograma
+              </h3>
+              <button
+                onClick={() => setEditingTask(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              updateTask(editingTask.id, editingTask);
+              setEditingTask(null);
+            }}>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>
+                  Descripción de la Tarea:
+                </label>
+                <input
+                  type="text"
+                  className="input-luxury"
+                  value={editingTask.title}
+                  onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>
+                    Fecha Límite:
+                  </label>
+                  <input
+                    type="date"
+                    className="input-luxury"
+                    value={editingTask.dueDate}
+                    onChange={(e) => setEditingTask({ ...editingTask, dueDate: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>
+                    Responsable:
+                  </label>
+                  <select
+                    className="select-custom"
+                    value={editingTask.assignedTo}
+                    onChange={(e) => setEditingTask({ ...editingTask, assignedTo: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem' }}
+                  >
+                    <option value="Ambos">Ambos</option>
+                    <option value="Julián">Julián</option>
+                    <option value="Yanet">Yanet</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>
+                    Prioridad:
+                  </label>
+                  <select
+                    className="select-custom"
+                    value={editingTask.priority}
+                    onChange={(e) => setEditingTask({ ...editingTask, priority: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem' }}
+                  >
+                    <option value="Urgente">Urgente</option>
+                    <option value="Alta">Alta</option>
+                    <option value="Media">Media</option>
+                    <option value="Baja">Baja</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>
+                    Categoría:
+                  </label>
+                  <input
+                    type="text"
+                    className="input-luxury"
+                    value={editingTask.category}
+                    onChange={(e) => setEditingTask({ ...editingTask, category: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                <button type="button" className="btn-secondary" onClick={() => setEditingTask(null)}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Save size={16} /> Guardar Cambios
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <style>{`
         .todo-module-container {

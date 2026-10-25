@@ -3,10 +3,11 @@ import { Mail, Share2, Copy, Check, Eye, Sparkles, Download, Palette } from 'luc
 import { useWedding } from '../context/WeddingContext';
 
 export const InvitationsWebBuilder = ({ setViewMode }) => {
-  const { data } = useWedding();
+  const { data, updateCouple } = useWedding();
   const [copiedLink, setCopiedLink] = useState(false);
+  const [savedText, setSavedText] = useState(false);
   const [invitationText, setInvitationText] = useState(
-    "Nos llena de felicidad invitarte a compartir con nosotros el día más esperado de nuestras vidas. Celebremos juntos nuestro amor y el inicio de esta nueva etapa."
+    data.couple?.invitationMessage || "Nos llena de felicidad invitarte a compartir con nosotros el día más esperado de nuestras vidas. Celebremos juntos nuestro amor y el inicio de esta nueva etapa."
   );
   const [invitationStyle, setInvitationStyle] = useState('burgundy-classic'); // 'burgundy-classic' | 'champagne-minimal'
   const [customGuestName, setCustomGuestName] = useState('Familia Rossi');
@@ -71,7 +72,27 @@ export const InvitationsWebBuilder = ({ setViewMode }) => {
           </div>
 
           <div className="form-group">
-            <label>Texto Principal de la Dedicatoria:</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+              <label style={{ margin: 0 }}>Texto Principal de la Dedicatoria:</label>
+              <button
+                type="button"
+                onClick={() => {
+                  updateCouple({ invitationMessage: invitationText });
+                  setSavedText(true);
+                  setTimeout(() => setSavedText(false), 2000);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--burgundy-700)',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                {savedText ? '✓ Guardado' : '💾 Guardar para todos'}
+              </button>
+            </div>
             <textarea 
               rows="4"
               value={invitationText}
@@ -93,7 +114,7 @@ export const InvitationsWebBuilder = ({ setViewMode }) => {
             <div className="quick-share-buttons">
               <a 
                 href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
-                  `¡Hola ${customGuestName}! Julián y Yanet te invitan a su boda el 8 de Octubre de 2027. Mira los detalles y confirma tu asistencia aquí: ${shareUrl}`
+                  `¡Hola ${customGuestName}! Julián y Yanet te invitan a su boda el 9 de Octubre de 2027. Mira los detalles y confirma tu asistencia aquí: ${shareUrl}`
                 )}`}
                 target="_blank"
                 rel="noreferrer"
@@ -127,7 +148,7 @@ export const InvitationsWebBuilder = ({ setViewMode }) => {
             </p>
 
             <div className="card-date-badge">
-              <div className="date-number">08</div>
+              <div className="date-number">09</div>
               <div className="date-month-year">
                 <span>OCTUBRE</span>
                 <strong>2027</strong>

@@ -9,6 +9,7 @@ export const GuestManagement = () => {
   const [statusFilter, setStatusFilter] = useState('todos');
   const [selectedTableId, setSelectedTableId] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingGuest, setEditingGuest] = useState(null);
   const [tableCapacityError, setTableCapacityError] = useState(null);
 
   const handleTableCapacityChange = (tableId, newCapacity) => {
@@ -356,13 +357,24 @@ export const GuestManagement = () => {
                           {guest.companions > 0 && <span className="comp-tag">+{guest.companions}</span>}
                           <div className="guest-menu-tag">🍴 {guest.menu}</div>
                         </div>
-                        <button 
-                          className="btn-icon-subtle" 
-                          title="Quitar de esta mesa"
-                          onClick={() => assignGuestToTable(guest.id, null)}
-                        >
-                          ✕
-                        </button>
+                        <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+                          <button 
+                            className="btn-icon-subtle" 
+                            title="Editar invitado"
+                            onClick={() => setEditingGuest({ ...guest })}
+                            style={{ color: 'var(--burgundy-700)', padding: '0.2rem' }}
+                          >
+                            <Edit2 size={13} />
+                          </button>
+                          <button 
+                            className="btn-icon-subtle" 
+                            title="Quitar de esta mesa"
+                            onClick={() => assignGuestToTable(guest.id, null)}
+                            style={{ padding: '0.2rem' }}
+                          >
+                            ✕
+                          </button>
+                        </div>
                       </div>
                     ))
                   )}
@@ -499,11 +511,24 @@ export const GuestManagement = () => {
                           </select>
                         </td>
                         <td>
-                          <div className="action-buttons">
+                          <div className="action-buttons" style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center' }}>
+                            <button 
+                              className="btn-icon-subtle" 
+                              title="Editar invitado"
+                              onClick={() => setEditingGuest({ ...guest })}
+                              style={{ color: 'var(--text-secondary)', padding: '0.3rem' }}
+                            >
+                              <Edit2 size={16} />
+                            </button>
                             <button 
                               className="btn-icon-subtle danger" 
                               title="Eliminar invitado"
-                              onClick={() => deleteGuest(guest.id)}
+                              onClick={() => {
+                                if (window.confirm(`¿Estás seguro de eliminar a "${guest.name}" de la lista de invitados?`)) {
+                                  deleteGuest(guest.id);
+                                }
+                              }}
+                              style={{ color: '#DC2626', padding: '0.3rem' }}
                             >
                               <Trash2 size={16} />
                             </button>
@@ -601,6 +626,133 @@ export const GuestManagement = () => {
               <div className="modal-actions">
                 <button type="button" className="btn-outline" onClick={() => setIsAddModalOpen(false)}>Cancelar</button>
                 <button type="submit" className="btn-primary">Guardar Invitado</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL EDITAR INVITADO EXISTENTE */}
+      {editingGuest && (
+        <div className="modal-backdrop" onClick={() => setEditingGuest(null)}>
+          <div className="modal-dialog card-luxury" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px' }}>
+            <div className="modal-header">
+              <h3 className="font-serif">Editar Invitado</h3>
+              <button className="btn-close" onClick={() => setEditingGuest(null)}>✕</button>
+            </div>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              updateGuest(editingGuest.id, {
+                name: editingGuest.name,
+                phone: editingGuest.phone,
+                companions: parseInt(editingGuest.companions) || 0,
+                status: editingGuest.status,
+                menu: editingGuest.menu,
+                notes: editingGuest.notes,
+                tableId: editingGuest.tableId || null
+              });
+              setEditingGuest(null);
+            }} className="modal-form">
+              <div className="form-group">
+                <label>Nombre y Apellido *</label>
+                <input 
+                  type="text" 
+                  required
+                  value={editingGuest.name}
+                  onChange={e => setEditingGuest({ ...editingGuest, name: e.target.value })}
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Teléfono (WhatsApp)</label>
+                  <input 
+                    type="text" 
+                    placeholder="+54 9 11 ..."
+                    value={editingGuest.phone || ''}
+                    onChange={e => setEditingGuest({ ...editingGuest, phone: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Acompañantes adicionales</label>
+                  <input 
+                    type="number" 
+                    min="0" 
+                    max="10"
+                    value={editingGuest.companions ?? 0}
+                    onChange={e => setEditingGuest({ ...editingGuest, companions: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Estado RSVP</label>
+                  <select 
+                    value={editingGuest.status}
+                    onChange={e => setEditingGuest({ ...editingGuest, status: e.target.value })}
+                  >
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Confirmado">Confirmado</option>
+                    <option value="Rechazado">Rechazado</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Preferencia de Menú</label>
+                  <select 
+                    value={editingGuest.menu}
+                    onChange={e => setEditingGuest({ ...editingGuest, menu: e.target.value })}
+                  >
+                    <option value="Tradicional">Tradicional</option>
+                    <option value="Vegetariano">Vegetariano</option>
+                    <option value="Vegano">Vegano</option>
+                    <option value="Celíaco">Celíaco / Gluten-Free</option>
+                    <option value="Menú Infantil">Menú Infantil</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Mesa Asignada</label>
+                <select 
+                  value={editingGuest.tableId || ''}
+                  onChange={e => setEditingGuest({ ...editingGuest, tableId: e.target.value || null })}
+                >
+                  <option value="">Sin Asignar (A definir)</option>
+                  {data.tables.map(t => (
+                    <option key={t.id} value={t.id}>{t.name} ({t.shape})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Notas Privadas / Alergias</label>
+                <input 
+                  type="text" 
+                  placeholder="Ej. Alérgico al maní, amigo del novio, etc."
+                  value={editingGuest.notes || ''}
+                  onChange={e => setEditingGuest({ ...editingGuest, notes: e.target.value })}
+                />
+              </div>
+
+              <div className="modal-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <button 
+                  type="button" 
+                  className="btn-outline" 
+                  onClick={() => {
+                    if (window.confirm(`¿Estás seguro de eliminar a "${editingGuest.name}"?`)) {
+                      deleteGuest(editingGuest.id);
+                      setEditingGuest(null);
+                    }
+                  }}
+                  style={{ color: '#DC2626', borderColor: '#FCA5A5' }}
+                >
+                  Eliminar Invitado
+                </button>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button type="button" className="btn-outline" onClick={() => setEditingGuest(null)}>Cancelar</button>
+                  <button type="submit" className="btn-primary">Guardar Cambios</button>
+                </div>
               </div>
             </form>
           </div>

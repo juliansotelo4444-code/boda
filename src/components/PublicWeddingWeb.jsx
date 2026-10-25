@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Music, Utensils, Camera, MapPin, Calendar, Clock, CheckCircle, ThumbsUp, Send, Sparkles } from 'lucide-react';
+import { Heart, Music, Utensils, Camera, MapPin, Calendar, Clock, CheckCircle, ThumbsUp, Send, Sparkles, Trash2, Copy } from 'lucide-react';
 import { useWedding } from '../context/WeddingContext';
 
 export const PublicWeddingWeb = ({ onNavigateToAlbum }) => {
-  const { data, addGuest, addSong, voteSong, addPhoto } = useWedding();
+  const { data, addGuest, addSong, voteSong, deleteSong, addPhoto } = useWedding();
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
   const [rsvpData, setRsvpData] = useState({
     name: '',
@@ -18,7 +18,8 @@ export const PublicWeddingWeb = ({ onNavigateToAlbum }) => {
   const [songSubmitted, setSongSubmitted] = useState(false);
 
   // Cuenta regresiva
-  const targetDate = new Date('2027-10-08T18:00:00');
+  const weddingDateStr = data.couple?.date || '2027-10-09T18:00:00';
+  const targetDate = new Date(weddingDateStr);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0 });
 
   useEffect(() => {
@@ -90,14 +91,14 @@ export const PublicWeddingWeb = ({ onNavigateToAlbum }) => {
   return (
     <div className="public-wedding-page animate-fade-in">
       {/* HERO ROMÁNTICO */}
-      <section className="public-hero">
+      <section className="public-hero" style={{ backgroundImage: `url('${data.couple?.heroImageUrl || '/assets/hero-bg.jpg'}')` }}>
         <div className="public-hero-backdrop"></div>
         <div className="public-hero-content">
           <div className="rings-icon">💍</div>
           <span className="hero-eyebrow">¡NOS CASAMOS!</span>
-          <h1 className="hero-names font-serif">Julián &amp; Yanet</h1>
-          <p className="hero-date">Viernes 8 de Octubre de 2027 • 18:00 hs</p>
-          <p className="hero-venue-tag">Palacio San Souci, Buenos Aires</p>
+          <h1 className="hero-names font-serif">{data.couple?.groom || 'Julián'} &amp; {data.couple?.bride || 'Yanet'}</h1>
+          <p className="hero-date">Sábado 9 de Octubre de 2027 • 18:00 hs</p>
+          <p className="hero-venue-tag">{data.couple?.venue || 'Palacio San Souci, Buenos Aires'}</p>
 
           <div className="public-countdown-pills">
             <div className="pill-item">
@@ -125,7 +126,7 @@ export const PublicWeddingWeb = ({ onNavigateToAlbum }) => {
         <section className="our-story-section card-luxury">
           <div className="story-grid">
             <div className="story-image-wrap">
-              <img src="/assets/couple.jpg" alt="Julián & Yanet" className="story-couple-photo" />
+              <img src={data.couple?.avatarUrl || data.couple?.heroImageUrl || '/assets/couple.jpg'} alt={`${data.couple?.groom} & ${data.couple?.bride}`} className="story-couple-photo" />
               <div className="photo-corner-badge">J &amp; Y • 2027</div>
             </div>
             <div className="story-text-wrap">
@@ -139,7 +140,7 @@ export const PublicWeddingWeb = ({ onNavigateToAlbum }) => {
                   <Calendar size={18} color="var(--burgundy-700)" />
                   <div>
                     <strong>Fecha</strong>
-                    <span>8 de Octubre, 2027</span>
+                    <span>9 de Octubre, 2027</span>
                   </div>
                 </div>
                 <div className="detail-item">
@@ -153,7 +154,7 @@ export const PublicWeddingWeb = ({ onNavigateToAlbum }) => {
                   <MapPin size={18} color="var(--burgundy-700)" />
                   <div>
                     <strong>Lugar</strong>
-                    <span>Palacio San Souci</span>
+                    <span>{data.couple?.venue || 'Palacio San Souci'}</span>
                   </div>
                 </div>
               </div>
@@ -333,17 +334,109 @@ export const PublicWeddingWeb = ({ onNavigateToAlbum }) => {
                       <span className="song-title-text">🎵 {song.title}</span>
                       <span className="song-artist-text">{song.artist} • <small>por {song.requestedBy}</small></span>
                     </div>
-                    <button 
-                      className="vote-btn"
-                      onClick={() => voteSong(song.id)}
-                      title="¡Yo también quiero bailar este tema!"
-                    >
-                      <ThumbsUp size={13} /> {song.votes}
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <button 
+                        className="vote-btn"
+                        onClick={() => voteSong(song.id)}
+                        title="¡Yo también quiero bailar este tema!"
+                      >
+                        <ThumbsUp size={13} /> {song.votes}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(`¿Quitar la canción "${song.title}" de la lista?`)) {
+                            deleteSong(song.id);
+                          }
+                        }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626', padding: '0.2rem' }}
+                        title="Eliminar canción"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
+          </div>
+        </section>
+
+        {/* DRESS CODE & REGALOS / DATOS BANCARIOS */}
+        <section className="card-luxury" style={{ padding: '2.5rem 2rem', marginBottom: '3rem' }}>
+          <div className="section-header-center" style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <span className="section-kicker">INFORMACIÓN IMPORTANTE PARA INVITADOS</span>
+            <h2 className="section-title font-serif">Dress Code &amp; Regalos</h2>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+            {/* DRESS CODE */}
+            <div style={{ background: '#FAF6F0', padding: '1.8rem', borderRadius: '14px', border: '1px solid var(--border-gold-subtle)', textAlign: 'center' }}>
+              <div style={{ fontSize: '2.2rem', marginBottom: '0.6rem' }}>✨👔👗</div>
+              <h3 className="font-serif" style={{ color: 'var(--burgundy-800)', fontSize: '1.3rem', marginBottom: '0.4rem' }}>
+                Código de Vestimenta
+              </h3>
+              <p style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--burgundy-900)', margin: '0.4rem 0' }}>
+                {data.couple?.dressCode || 'Elegante / Traje y Vestido de Fiesta'}
+              </p>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
+                Acompáñanos luciendo tu mejor atuendo para una noche mágica e inolvidable.
+              </p>
+            </div>
+
+            {/* CUENTA BANCARIA / REGALOS */}
+            <div style={{ background: '#FAF6F0', padding: '1.8rem', borderRadius: '14px', border: '1px solid var(--border-gold-subtle)' }}>
+              <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                <div style={{ fontSize: '2.2rem', marginBottom: '0.6rem' }}>🎁💌</div>
+                <h3 className="font-serif" style={{ color: 'var(--burgundy-800)', fontSize: '1.3rem', marginBottom: '0.4rem' }}>
+                  Regalo de Bodas &amp; Luna de Miel
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
+                  Tu presencia es nuestro mejor regalo. Si deseas hacernos un presente o colaborar con nuestro viaje a Neuquén:
+                </p>
+              </div>
+
+              <div style={{ background: '#FFF', padding: '1rem', borderRadius: '10px', border: '1px solid #EFE8DF' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Alias:</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <strong>{data.couple?.giftAlias || 'BODA.JULIAN.YANET'}</strong>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(data.couple?.giftAlias || 'BODA.JULIAN.YANET');
+                        alert('¡Alias copiado al portapapeles!');
+                      }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--burgundy-700)', fontSize: '0.75rem', fontWeight: 700 }}
+                    >
+                      Copiar
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>CBU:</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <code style={{ fontSize: '0.8rem', background: '#F5EFEB', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>{data.couple?.giftCbu || '0000003100012345678901'}</code>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(data.couple?.giftCbu || '0000003100012345678901');
+                        alert('¡CBU copiado al portapapeles!');
+                      }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--burgundy-700)', fontSize: '0.75rem', fontWeight: 700 }}
+                    >
+                      Copiar
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                  <span>Titular: <strong>{data.couple?.giftAccountHolder || 'Julián Sotelo / Yanet'}</strong></span>
+                  <span>{data.couple?.giftBank || 'Banco Santander'}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 

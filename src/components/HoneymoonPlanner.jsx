@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Compass, Plane, Car, Home, Sun, MapPin, Plus, ExternalLink, Calendar, Check, Edit2, Save, X } from 'lucide-react';
+import { Compass, Plane, Car, Home, Sun, MapPin, Plus, ExternalLink, Calendar, Check, Edit2, Save, X, Trash2 } from 'lucide-react';
 import { useWedding } from '../context/WeddingContext';
 
 export const HoneymoonPlanner = () => {
-  const { data, addHoneymoonItem, updateHoneymoon } = useWedding();
+  const { data, addHoneymoonItem, updateHoneymoonItem, deleteHoneymoonItem, updateHoneymoon } = useWedding();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditDestinationModal, setShowEditDestinationModal] = useState(false);
+  const [editingHoneymoonItem, setEditingHoneymoonItem] = useState(null);
 
   const [destForm, setDestForm] = useState({
     destination: data.honeymoon?.destination || 'Neuquén, Patagonia Argentina',
@@ -204,12 +205,39 @@ export const HoneymoonPlanner = () => {
           const Icon = getIconForType(item.type);
           return (
             <div key={item.id} className="honeymoon-card card-luxury">
-              <div className="card-top-type">
-                <div className="type-icon-circle">
-                  <Icon size={18} />
+              <div className="card-top-type" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div className="type-icon-circle">
+                    <Icon size={18} />
+                  </div>
+                  <span className="type-name">{item.type}</span>
+                  <span className="status-pill-small">{item.status}</span>
                 </div>
-                <span className="type-name">{item.type}</span>
-                <span className="status-pill-small">{item.status}</span>
+
+                <div style={{ display: 'flex', gap: '0.2rem' }}>
+                  <button
+                    type="button"
+                    className="btn-icon-subtle"
+                    title="Editar reserva"
+                    onClick={() => setEditingHoneymoonItem(item)}
+                    style={{ padding: '0.25rem' }}
+                  >
+                    <Edit2 size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-icon-subtle"
+                    title="Eliminar reserva"
+                    onClick={() => {
+                      if (window.confirm(`¿Deseas eliminar la reserva "${item.title}"?`)) {
+                        deleteHoneymoonItem(item.id);
+                      }
+                    }}
+                    style={{ color: '#DC2626', padding: '0.25rem' }}
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
               </div>
 
               <h4 className="honeymoon-title">{item.title}</h4>
@@ -226,12 +254,87 @@ export const HoneymoonPlanner = () => {
               </div>
 
               <div className="honeymoon-footer">
-                <span className="item-cost font-serif">${item.cost.toLocaleString()} USD</span>
+                <span className="item-cost font-serif">${Number(item.cost).toLocaleString()} USD</span>
                 <span className="badge-gold badge">Reserva Lista</span>
               </div>
             </div>
           );
         })}
+        </div>
+      )}
+
+      {/* MODAL EDITAR RESERVA LUNA DE MIEL */}
+      {editingHoneymoonItem && (
+        <div className="modal-backdrop" onClick={() => setEditingHoneymoonItem(null)}>
+          <div className="modal-dialog card-luxury" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="font-serif">Editar Reserva de Luna de Miel</h3>
+              <button className="btn-close" onClick={() => setEditingHoneymoonItem(null)}>✕</button>
+            </div>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              updateHoneymoonItem(editingHoneymoonItem.id, editingHoneymoonItem);
+              setEditingHoneymoonItem(null);
+            }} className="modal-form">
+              <div className="form-group">
+                <label>Tipo de Reserva</label>
+                <select
+                  className="select-custom"
+                  value={editingHoneymoonItem.type}
+                  onChange={e => setEditingHoneymoonItem({ ...editingHoneymoonItem, type: e.target.value })}
+                  style={{ width: '100%', padding: '0.65rem' }}
+                >
+                  <option value="Hotel">Hotel / Alojamiento</option>
+                  <option value="Vuelo">Vuelo / Traslado</option>
+                  <option value="Alquiler Auto">Alquiler de Auto / 4x4</option>
+                  <option value="Actividad">Excursión / Actividad</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Título / Descripción</label>
+                <input
+                  type="text"
+                  required
+                  value={editingHoneymoonItem.title}
+                  onChange={e => setEditingHoneymoonItem({ ...editingHoneymoonItem, title: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Fechas</label>
+                <input
+                  type="text"
+                  value={editingHoneymoonItem.dates || ''}
+                  onChange={e => setEditingHoneymoonItem({ ...editingHoneymoonItem, dates: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Costo Estimado (USD)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={editingHoneymoonItem.cost}
+                  onChange={e => setEditingHoneymoonItem({ ...editingHoneymoonItem, cost: Number(e.target.value) })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Referencia / Voucher / Código</label>
+                <input
+                  type="text"
+                  value={editingHoneymoonItem.ref || ''}
+                  onChange={e => setEditingHoneymoonItem({ ...editingHoneymoonItem, ref: e.target.value })}
+                />
+              </div>
+
+              <div className="modal-actions">
+                <button type="button" className="btn-outline" onClick={() => setEditingHoneymoonItem(null)}>Cancelar</button>
+                <button type="submit" className="btn-primary">Guardar Cambios</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

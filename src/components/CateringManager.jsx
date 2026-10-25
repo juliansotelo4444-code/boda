@@ -3,11 +3,16 @@ import { Utensils, Wine, Plus, Trash2, Edit2, Check, Sparkles, AlertCircle, Hear
 import { useWedding } from '../context/WeddingContext';
 
 export const CateringManager = () => {
-  const { data, updateCatering, addMenuItem, deleteMenuItem } = useWedding();
+  const { data, updateCatering, addMenuItem, updateMenuItem, deleteMenuItem } = useWedding();
   const [activeSection, setActiveSection] = useState('mainCourses'); // 'cocktail' | 'mainCourses' | 'desserts' | 'sweetTable' | 'lateNight' | 'openBar'
   const [showAddModal, setShowAddModal] = useState(false);
   const [newItemTitle, setNewItemTitle] = useState('');
   const [newItemType, setNewItemType] = useState('Tradicional');
+
+  // Edición de platos y formato del banquete
+  const [editingItem, setEditingItem] = useState(null);
+  const [showFormatModal, setShowFormatModal] = useState(false);
+  const [tempFormat, setTempFormat] = useState('');
 
   const catering = data.catering || {
     format: "Catering de 3 pasos (Recepción / Entrada, Plato Principal y Postre) + Mesa Dulce y Fin de fiesta",
@@ -79,8 +84,30 @@ export const CateringManager = () => {
           <h2 className="module-title font-serif" style={{ color: 'var(--burgundy-900)', fontSize: '2.2rem', margin: '0.2rem 0' }}>
             ¿Qué vamos a comer? — Menú de Bodas
           </h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-            Palacio San Souci • {catering.format}
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <span>Palacio San Souci • {catering.format}</span>
+            <button
+              type="button"
+              onClick={() => {
+                setTempFormat(catering.format || '');
+                setShowFormatModal(true);
+              }}
+              style={{
+                background: 'rgba(103, 0, 26, 0.08)',
+                border: '1px solid var(--border-gold-subtle)',
+                borderRadius: '6px',
+                padding: '0.2rem 0.5rem',
+                fontSize: '0.75rem',
+                color: 'var(--burgundy-700)',
+                cursor: 'pointer',
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem'
+              }}
+            >
+              <Edit2 size={12} /> Editar Formato
+            </button>
           </p>
         </div>
 
@@ -230,19 +257,40 @@ export const CateringManager = () => {
                     }}>
                       {item.type || item.category || 'Opción Menú'}
                     </span>
-                    <button
-                      onClick={() => deleteMenuItem(activeSection, item.id)}
-                      title="Eliminar plato"
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: 'var(--text-muted)',
-                        cursor: 'pointer',
-                        padding: '0.2rem',
-                      }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        onClick={() => setEditingItem({ ...item, currentSection: activeSection, targetSection: activeSection })}
+                        title="Editar plato"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-secondary)',
+                          cursor: 'pointer',
+                          padding: '0.2rem',
+                        }}
+                      >
+                        <Edit2 size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(`¿Estás seguro de eliminar el plato "${item.title}"?`)) {
+                            deleteMenuItem(activeSection, item.id);
+                          }
+                        }}
+                        title="Eliminar plato"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#DC2626',
+                          cursor: 'pointer',
+                          padding: '0.2rem',
+                        }}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
                   </div>
 
                   <h4 style={{ fontSize: '1.05rem', color: 'var(--text-primary)', margin: '0 0 0.5rem 0', fontWeight: 600, lineHeight: 1.4 }}>
@@ -258,6 +306,171 @@ export const CateringManager = () => {
           </div>
         )}
       </div>
+
+      {/* MODAL EDITAR PLATO */}
+      {editingItem && (
+        <div className="modal-overlay animate-fade-in" style={{ zIndex: 9999 }}>
+          <div className="modal-luxury card-luxury" style={{ maxWidth: '480px', width: '90%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <h3 className="font-serif" style={{ color: 'var(--burgundy-800)', fontSize: '1.3rem', margin: 0 }}>
+                Editar Opción del Banquete
+              </h3>
+              <button
+                type="button"
+                onClick={() => setEditingItem(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (editingItem.targetSection !== editingItem.currentSection) {
+                // Mover a otra sección
+                deleteMenuItem(editingItem.currentSection, editingItem.id);
+                addMenuItem(editingItem.targetSection, {
+                  title: editingItem.title,
+                  type: editingItem.type,
+                  category: editingItem.type
+                });
+              } else {
+                updateMenuItem(editingItem.currentSection, editingItem.id, {
+                  title: editingItem.title,
+                  type: editingItem.type,
+                  category: editingItem.type
+                });
+              }
+              setEditingItem(null);
+            }}>
+              <div style={{ marginBottom: '1.2rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.35rem' }}>
+                  Nombre del Plato / Preparación:
+                </label>
+                <textarea
+                  className="input-luxury"
+                  rows={3}
+                  value={editingItem.title}
+                  onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.35rem' }}>
+                    Tipo / Categoría:
+                  </label>
+                  <select
+                    className="select-custom"
+                    value={editingItem.type || editingItem.category || 'Tradicional'}
+                    onChange={(e) => setEditingItem({ ...editingItem, type: e.target.value, category: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem' }}
+                  >
+                    <option value="Tradicional">Tradicional</option>
+                    <option value="Pescado">Pescado</option>
+                    <option value="Vegetariano">Vegetariano</option>
+                    <option value="Vegano">Vegano</option>
+                    <option value="Sin TACC">Celíaco / Sin TACC</option>
+                    <option value="Menú Infantil">Menú Infantil</option>
+                    <option value="Bebida / Trago">Bebida / Trago</option>
+                    <option value="Postre">Postre / Dulce</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.35rem' }}>
+                    Paso del Banquete:
+                  </label>
+                  <select
+                    className="select-custom"
+                    value={editingItem.targetSection}
+                    onChange={(e) => setEditingItem({ ...editingItem, targetSection: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem' }}
+                  >
+                    {sectionsConfig.map(s => (
+                      <option key={s.id} value={s.id}>{s.icon} {s.title}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className="btn-outline"
+                  onClick={() => {
+                    if (window.confirm(`¿Estás seguro de eliminar el plato "${editingItem.title}"?`)) {
+                      deleteMenuItem(editingItem.currentSection, editingItem.id);
+                      setEditingItem(null);
+                    }
+                  }}
+                  style={{ color: '#DC2626', borderColor: '#FCA5A5' }}
+                >
+                  Eliminar Plato
+                </button>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button type="button" className="btn-secondary" onClick={() => setEditingItem(null)}>
+                    Cancelar
+                  </button>
+                  <button type="submit" className="btn-primary">
+                    Guardar Cambios
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL EDITAR FORMATO DEL BANQUETE */}
+      {showFormatModal && (
+        <div className="modal-overlay animate-fade-in" style={{ zIndex: 9999 }}>
+          <div className="modal-luxury card-luxury" style={{ maxWidth: '520px', width: '90%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <h3 className="font-serif" style={{ color: 'var(--burgundy-800)', fontSize: '1.3rem', margin: 0 }}>
+                Editar Formato del Banquete
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowFormatModal(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              updateCatering({ format: tempFormat });
+              setShowFormatModal(false);
+            }}>
+              <div style={{ marginBottom: '1.2rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.35rem' }}>
+                  Descripción del Servicio Gastronómico:
+                </label>
+                <textarea
+                  className="input-luxury"
+                  rows={3}
+                  value={tempFormat}
+                  onChange={(e) => setTempFormat(e.target.value)}
+                  placeholder="Ej: Catering de 3 pasos (Recepción / Entrada, Plato Principal y Postre) + Mesa Dulce y Fin de fiesta"
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                <button type="button" className="btn-secondary" onClick={() => setShowFormatModal(false)}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn-primary">
+                  Guardar Formato
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* MODAL PARA AGREGAR PLATO */}
       {showAddModal && (

@@ -211,7 +211,17 @@ export const WeddingProvider = ({ children }) => {
     }));
   };
 
-  // Gestor de Tareas
+  const updateMenuItem = (section, itemId, updates) => {
+    setData(prev => ({
+      ...prev,
+      catering: {
+        ...prev.catering,
+        [section]: (prev.catering?.[section] || []).map(i => i.id === itemId ? { ...i, ...updates } : i)
+      }
+    }));
+  };
+
+  // Gestor de Tareas (CRUD completo)
   const toggleTask = (id) => {
     setData(prev => ({
       ...prev,
@@ -228,15 +238,52 @@ export const WeddingProvider = ({ children }) => {
     setData(prev => ({ ...prev, tasks: [newTask, ...prev.tasks] }));
   };
 
-  // Gestor de Finanzas & Pagos
+  const updateTask = (id, updates) => {
+    setData(prev => ({
+      ...prev,
+      tasks: prev.tasks.map(t => t.id === id ? { ...t, ...updates } : t)
+    }));
+  };
+
+  const deleteTask = (id) => {
+    setData(prev => ({
+      ...prev,
+      tasks: prev.tasks.filter(t => t.id !== id)
+    }));
+  };
+
+  // Gestor de Finanzas & Pagos (CRUD completo)
   const addBudgetItem = (item) => {
     const newItem = {
       ...item,
       id: `b_${Date.now()}`,
-      paid: 0,
-      payments: []
+      paid: Number(item.paid) || 0,
+      agreed: Number(item.agreed) || Number(item.estimated) || 0,
+      estimated: Number(item.estimated) || Number(item.agreed) || 0,
+      payments: item.payments || []
     };
     setData(prev => ({ ...prev, budgetItems: [...prev.budgetItems, newItem] }));
+  };
+
+  const updateBudgetItem = (id, updates) => {
+    setData(prev => ({
+      ...prev,
+      budgetItems: prev.budgetItems.map(item => {
+        if (item.id === id) {
+          const agreed = updates.agreed !== undefined ? Number(updates.agreed) : item.agreed;
+          const estimated = updates.estimated !== undefined ? Number(updates.estimated) : item.estimated;
+          return { ...item, ...updates, agreed, estimated };
+        }
+        return item;
+      })
+    }));
+  };
+
+  const deleteBudgetItem = (id) => {
+    setData(prev => ({
+      ...prev,
+      budgetItems: prev.budgetItems.filter(b => b.id !== id)
+    }));
   };
 
   const addPayment = (budgetItemId, payment) => {
@@ -257,7 +304,50 @@ export const WeddingProvider = ({ children }) => {
     }));
   };
 
-  // Álbum Colaborativo (Subida instantánea de fotos)
+  const deletePayment = (budgetItemId, paymentId) => {
+    setData(prev => ({
+      ...prev,
+      budgetItems: prev.budgetItems.map(item => {
+        if (item.id === budgetItemId) {
+          const newPayments = item.payments.filter(p => p.id !== paymentId);
+          const totalPaid = newPayments.reduce((acc, curr) => acc + Number(curr.amount), 0);
+          return {
+            ...item,
+            paid: totalPaid,
+            payments: newPayments
+          };
+        }
+        return item;
+      })
+    }));
+  };
+
+  // Directorio de Proveedores (CRUD completo)
+  const addVendor = (vendor) => {
+    const newVendor = {
+      ...vendor,
+      id: `v_${Date.now()}`,
+      status: vendor.status || 'Confirmado',
+      contractUrl: vendor.contractUrl || 'Contrato-Servicio.pdf',
+    };
+    setData(prev => ({ ...prev, vendors: [...(prev.vendors || []), newVendor] }));
+  };
+
+  const updateVendor = (id, updates) => {
+    setData(prev => ({
+      ...prev,
+      vendors: (prev.vendors || []).map(v => v.id === id ? { ...v, ...updates } : v)
+    }));
+  };
+
+  const deleteVendor = (id) => {
+    setData(prev => ({
+      ...prev,
+      vendors: (prev.vendors || []).filter(v => v.id !== id)
+    }));
+  };
+
+  // Álbum Colaborativo (Subida y eliminación)
   const addPhoto = (photoData) => {
     const newPhoto = {
       id: `ph_${Date.now()}`,
@@ -268,6 +358,13 @@ export const WeddingProvider = ({ children }) => {
       time: 'Hace un instante'
     };
     setData(prev => ({ ...prev, photos: [newPhoto, ...prev.photos] }));
+  };
+
+  const deletePhoto = (photoId) => {
+    setData(prev => ({
+      ...prev,
+      photos: prev.photos.filter(ph => ph.id !== photoId)
+    }));
   };
 
   const togglePhotoLike = (photoId) => {
@@ -289,6 +386,13 @@ export const WeddingProvider = ({ children }) => {
     setData(prev => ({ ...prev, songs: [...prev.songs, newSong] }));
   };
 
+  const deleteSong = (id) => {
+    setData(prev => ({
+      ...prev,
+      songs: prev.songs.filter(s => s.id !== id)
+    }));
+  };
+
   const voteSong = (id) => {
     setData(prev => ({
       ...prev,
@@ -296,7 +400,7 @@ export const WeddingProvider = ({ children }) => {
     }));
   };
 
-  // Luna de Miel
+  // Luna de Miel (CRUD completo)
   const updateHoneymoon = (updates) => {
     setData(prev => ({
       ...prev,
@@ -319,13 +423,34 @@ export const WeddingProvider = ({ children }) => {
   const addHoneymoonItem = (item) => {
     const newItem = {
       ...item,
-      id: `h_${Date.now()}`
+      id: `h_${Date.now()}`,
+      cost: Number(item.cost) || 0
     };
     setData(prev => ({
       ...prev,
       honeymoon: {
         ...prev.honeymoon,
         items: [...prev.honeymoon.items, newItem]
+      }
+    }));
+  };
+
+  const updateHoneymoonItem = (id, updates) => {
+    setData(prev => ({
+      ...prev,
+      honeymoon: {
+        ...prev.honeymoon,
+        items: prev.honeymoon.items.map(i => i.id === id ? { ...i, ...updates, cost: updates.cost !== undefined ? Number(updates.cost) : i.cost } : i)
+      }
+    }));
+  };
+
+  const deleteHoneymoonItem = (id) => {
+    setData(prev => ({
+      ...prev,
+      honeymoon: {
+        ...prev.honeymoon,
+        items: prev.honeymoon.items.filter(i => i.id !== id)
       }
     }));
   };
@@ -379,17 +504,30 @@ export const WeddingProvider = ({ children }) => {
       addTable,
       updateCatering,
       addMenuItem,
+      updateMenuItem,
       deleteMenuItem,
       toggleTask,
       addTask,
+      updateTask,
+      deleteTask,
       addBudgetItem,
+      updateBudgetItem,
+      deleteBudgetItem,
       addPayment,
+      deletePayment,
+      addVendor,
+      updateVendor,
+      deleteVendor,
       addPhoto,
+      deletePhoto,
       togglePhotoLike,
       addSong,
+      deleteSong,
       voteSong,
       updateHoneymoon,
       addHoneymoonItem,
+      updateHoneymoonItem,
+      deleteHoneymoonItem,
       notificationPermission,
       requestNotificationPermission,
       sendTestNotification,

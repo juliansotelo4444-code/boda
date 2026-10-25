@@ -1,18 +1,34 @@
 import React, { useState } from 'react';
-import { DollarSign, Plus, FileText, Phone, Mail, ExternalLink, Check, AlertTriangle, ArrowUpRight } from 'lucide-react';
+import { DollarSign, Plus, FileText, Phone, Mail, ExternalLink, Check, AlertTriangle, ArrowUpRight, Trash2, Edit2, X, Save } from 'lucide-react';
 import { useWedding } from '../context/WeddingContext';
 
 export const FinanceVendors = () => {
-  const { data, addPayment, addBudgetItem } = useWedding();
+  const { data, addPayment, deletePayment, addBudgetItem, updateBudgetItem, deleteBudgetItem, addVendor, updateVendor, deleteVendor } = useWedding();
   const [activeTab, setActiveTab] = useState('budget'); // 'budget' | 'vendors'
   const [selectedBudgetItemForPayment, setSelectedBudgetItemForPayment] = useState(null);
+  const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
+  const [newExpenseForm, setNewExpenseForm] = useState({ category: 'Catering & Bebidas', vendor: '', agreed: 1000, notes: '' });
+  const [editingExpense, setEditingExpense] = useState(null);
+
+  // Estados Directorio de Proveedores (CRUD)
+  const [showAddVendorModal, setShowAddVendorModal] = useState(false);
+  const [editingVendor, setEditingVendor] = useState(null);
+  const [newVendorForm, setNewVendorForm] = useState({
+    name: '',
+    category: 'Catering & Bebidas',
+    phone: '',
+    email: '',
+    status: 'Confirmado',
+    contractUrl: 'Contrato.pdf',
+    notes: ''
+  });
 
   // Formulario nuevo pago
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentConcept, setPaymentConcept] = useState('Segundo pago seña');
   const [paymentDate, setPaymentDate] = useState('2026-10-15');
 
-  const totalBudget = data.couple.totalBudget || 28000;
+  const totalBudget = data.couple?.totalBudget || 25000;
   const totalAgreed = data.budgetItems.reduce((acc, curr) => acc + (curr.agreed || curr.estimated || 0), 0);
   const totalPaid = data.budgetItems.reduce((acc, curr) => acc + (curr.paid || 0), 0);
   const totalRemaining = totalAgreed - totalPaid;
@@ -85,20 +101,7 @@ export const FinanceVendors = () => {
             <h3 className="font-serif">Desglose de Gastos y Pagos Parciales</h3>
             <button 
               className="btn-primary btn-sm"
-              onClick={() => {
-                const cat = prompt("Categoría del gasto (ej. Salón, Catering, Música):", "Catering");
-                if (!cat) return;
-                const ven = prompt("Nombre del proveedor o servicio:", "Servicio General");
-                if (!ven) return;
-                const amt = parseFloat(prompt("Monto total acordado (USD):", "2000")) || 0;
-                addBudgetItem({
-                  category: cat,
-                  vendor: ven,
-                  estimated: amt,
-                  agreed: amt,
-                  notes: "Registrado en el panel de finanzas"
-                });
-              }}
+              onClick={() => setShowAddExpenseModal(true)}
             >
               + Añadir Rubro al Presupuesto
             </button>
@@ -115,20 +118,7 @@ export const FinanceVendors = () => {
               </p>
               <button 
                 className="btn-primary"
-                onClick={() => {
-                  const cat = prompt("Categoría del gasto (ej. Salón, Catering, Música):", "Catering");
-                  if (!cat) return;
-                  const ven = prompt("Nombre del proveedor o servicio:", "Servicio General");
-                  if (!ven) return;
-                  const amt = parseFloat(prompt("Monto total acordado (USD):", "2000")) || 0;
-                  addBudgetItem({
-                    category: cat,
-                    vendor: ven,
-                    estimated: amt,
-                    agreed: amt,
-                    notes: "Registrado en el panel de finanzas"
-                  });
-                }}
+                onClick={() => setShowAddExpenseModal(true)}
               >
                 + Añadir Primer Rubro
               </button>
@@ -161,12 +151,35 @@ export const FinanceVendors = () => {
                           <span className="lbl">Resta Pagar:</span>
                           <strong className="text-gold">${pending.toLocaleString()} USD</strong>
                         </div>
-                        <button 
-                          className="btn-primary btn-sm"
-                          onClick={() => setSelectedBudgetItemForPayment(item)}
-                        >
-                          + Registrar Pago
-                        </button>
+                        
+                        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                          <button 
+                            className="btn-primary btn-sm"
+                            onClick={() => setSelectedBudgetItemForPayment(item)}
+                          >
+                            + Pago
+                          </button>
+                          <button
+                            className="btn-icon-subtle"
+                            title="Editar rubro"
+                            onClick={() => setEditingExpense(item)}
+                            style={{ padding: '0.4rem' }}
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button
+                            className="btn-icon-subtle"
+                            title="Eliminar rubro"
+                            onClick={() => {
+                              if (window.confirm(`¿Estás seguro de eliminar el rubro "${item.vendor}" (${item.category})?`)) {
+                                deleteBudgetItem(item.id);
+                              }
+                            }}
+                            style={{ color: '#DC2626', padding: '0.4rem' }}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -181,11 +194,23 @@ export const FinanceVendors = () => {
                         <span className="history-title">Registro de pagos parciales realizados:</span>
                         <div className="payments-chips">
                           {item.payments.map(p => (
-                            <div key={p.id} className="payment-chip">
+                            <div key={p.id} className="payment-chip" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
                               <span>📅 {p.date}</span>
                               <strong>${p.amount.toLocaleString()} USD</strong>
                               <small>({p.concept})</small>
                               <span className="receipt-link">📄 {p.receipt}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (window.confirm(`¿Eliminar este comprobante de pago de $${p.amount}?`)) {
+                                    deletePayment(item.id, p.id);
+                                  }
+                                }}
+                                title="Eliminar pago"
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626', marginLeft: '0.3rem', fontSize: '0.85rem' }}
+                              >
+                                ✕
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -201,52 +226,101 @@ export const FinanceVendors = () => {
 
       {/* TAB 2: DIRECTORIO DE PROVEEDORES */}
       {activeTab === 'vendors' && (
-        data.vendors.length === 0 ? (
-          <div className="card-luxury" style={{ textAlign: 'center', padding: '4rem 1.5rem', color: 'var(--text-muted)' }}>
-            <FileText size={44} color="var(--gold-500)" style={{ margin: '0 auto 1rem auto', display: 'block' }} />
-            <h4 className="font-serif" style={{ fontSize: '1.4rem', color: 'var(--burgundy-700)', marginBottom: '0.5rem' }}>
-              Directorio de Proveedores Listo
-            </h4>
-            <p style={{ maxWidth: '500px', margin: '0 auto', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-              Aquí podrás registrar los datos de contacto, teléfonos, notas privadas y contratos en PDF de cada profesional contratado para la boda.
-            </p>
-          </div>
-        ) : (
-          <div className="vendors-grid">
-            {data.vendors.map(vendor => (
-            <div key={vendor.id} className="vendor-card card-luxury">
-              <div className="vendor-top">
-                <span className="badge-burgundy badge">{vendor.category}</span>
-                <span className="status-contract-pill">✓ {vendor.status}</span>
-              </div>
-
-              <h3 className="vendor-name font-serif">{vendor.name}</h3>
-
-              <div className="vendor-contact-info">
-                <div className="contact-line">
-                  <Phone size={14} /> <span>{vendor.phone}</span>
-                </div>
-                <div className="contact-line">
-                  <Mail size={14} /> <span>{vendor.email}</span>
-                </div>
-              </div>
-
-              <div className="vendor-contract-attachment">
-                <FileText size={16} color="var(--burgundy-700)" />
-                <span className="file-name">{vendor.contractUrl}</span>
-                <button className="btn-icon-subtle" title="Ver documento">
-                  <ExternalLink size={14} />
-                </button>
-              </div>
-
-              <div className="vendor-notes-box">
-                <span className="notes-lbl">Notas Privadas de los Novios:</span>
-                <p>{vendor.notes}</p>
-              </div>
+        <div className="card-luxury" style={{ padding: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #EDE7DF', paddingBottom: '1rem', flexWrap: 'wrap', gap: '0.8rem' }}>
+            <div>
+              <h3 className="font-serif" style={{ color: 'var(--burgundy-900)', fontSize: '1.5rem', margin: 0 }}>
+                Directorio de Proveedores
+              </h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', margin: '0.2rem 0 0 0' }}>
+                Contactos clave, teléfonos, estado de contrato y notas confidenciales de la boda.
+              </p>
             </div>
-          ))}
+            <button 
+              className="btn-primary" 
+              onClick={() => setShowAddVendorModal(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.65rem 1.2rem' }}
+            >
+              <Plus size={16} /> + Añadir Proveedor
+            </button>
+          </div>
+
+          {data.vendors.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '4rem 1.5rem', color: 'var(--text-muted)' }}>
+              <FileText size={44} color="var(--gold-500)" style={{ margin: '0 auto 1rem auto', display: 'block' }} />
+              <h4 className="font-serif" style={{ fontSize: '1.4rem', color: 'var(--burgundy-700)', marginBottom: '0.5rem' }}>
+                Directorio de Proveedores Listo
+              </h4>
+              <p style={{ maxWidth: '500px', margin: '0 auto 1.5rem auto', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                Aquí podrás registrar los datos de contacto, teléfonos, notas privadas y contratos en PDF de cada profesional contratado para la boda.
+              </p>
+              <button className="btn-primary" onClick={() => setShowAddVendorModal(true)}>
+                <Plus size={16} /> Añadir Primer Proveedor
+              </button>
+            </div>
+          ) : (
+            <div className="vendors-grid">
+              {data.vendors.map(vendor => (
+                <div key={vendor.id} className="vendor-card card-luxury" style={{ position: 'relative' }}>
+                  <div className="vendor-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <span className="badge-burgundy badge">{vendor.category}</span>
+                      <span className="status-contract-pill">✓ {vendor.status}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.3rem' }}>
+                      <button
+                        className="btn-icon-subtle"
+                        title="Editar proveedor"
+                        onClick={() => setEditingVendor({ ...vendor })}
+                        style={{ color: 'var(--text-secondary)', padding: '0.25rem' }}
+                      >
+                        <Edit2 size={15} />
+                      </button>
+                      <button
+                        className="btn-icon-subtle danger"
+                        title="Eliminar proveedor"
+                        onClick={() => {
+                          if (window.confirm(`¿Estás seguro de eliminar al proveedor "${vendor.name}"?`)) {
+                            deleteVendor(vendor.id);
+                          }
+                        }}
+                        style={{ color: '#DC2626', padding: '0.25rem' }}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <h3 className="vendor-name font-serif" style={{ marginTop: '0.6rem' }}>{vendor.name}</h3>
+
+                  <div className="vendor-contact-info">
+                    <div className="contact-line">
+                      <Phone size={14} /> <span>{vendor.phone || 'No registrado'}</span>
+                    </div>
+                    <div className="contact-line">
+                      <Mail size={14} /> <span>{vendor.email || 'No registrado'}</span>
+                    </div>
+                  </div>
+
+                  {vendor.contractUrl && (
+                    <div className="vendor-contract-attachment">
+                      <FileText size={16} color="var(--burgundy-700)" />
+                      <span className="file-name">{vendor.contractUrl}</span>
+                    </div>
+                  )}
+
+                  {vendor.notes && (
+                    <div className="vendor-notes-box">
+                      <span className="notes-lbl">Notas Privadas de los Novios:</span>
+                      <p>{vendor.notes}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      ))}
+      )}
 
       {/* MODAL REGISTRAR PAGO PARCIAL */}
       {selectedBudgetItemForPayment && (
@@ -289,6 +363,365 @@ export const FinanceVendors = () => {
               <div className="modal-actions">
                 <button type="button" className="btn-outline" onClick={() => setSelectedBudgetItemForPayment(null)}>Cancelar</button>
                 <button type="submit" className="btn-primary">Guardar Pago</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL AGREGAR RUBRO AL PRESUPUESTO */}
+      {showAddExpenseModal && (
+        <div className="modal-backdrop" onClick={() => setShowAddExpenseModal(false)}>
+          <div className="modal-dialog card-luxury" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="font-serif">Añadir Rubro al Presupuesto</h3>
+              <button className="btn-close" onClick={() => setShowAddExpenseModal(false)}>✕</button>
+            </div>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              addBudgetItem(newExpenseForm);
+              setNewExpenseForm({ category: 'Catering & Bebidas', vendor: '', agreed: 1000, notes: '' });
+              setShowAddExpenseModal(false);
+            }} className="modal-form">
+              <div className="form-group">
+                <label>Categoría del Gasto *</label>
+                <select
+                  className="select-custom"
+                  value={newExpenseForm.category}
+                  onChange={e => setNewExpenseForm({ ...newExpenseForm, category: e.target.value })}
+                  style={{ width: '100%', padding: '0.65rem' }}
+                >
+                  <option value="Salón & Jardines">Salón & Jardines</option>
+                  <option value="Catering & Bebidas">Catering & Bebidas</option>
+                  <option value="Fotografía & Video">Fotografía & Video</option>
+                  <option value="DJ, Música & Luces">DJ, Música & Luces</option>
+                  <option value="Vestimenta & Estilo">Vestimenta & Estilo</option>
+                  <option value="Ambientación & Flores">Ambientación & Flores</option>
+                  <option value="Invitaciones & Papelería">Invitaciones & Papelería</option>
+                  <option value="Otros">Otros</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Nombre del Proveedor o Servicio *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej. Catering Palacio San Souci"
+                  value={newExpenseForm.vendor}
+                  onChange={e => setNewExpenseForm({ ...newExpenseForm, vendor: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Monto Total Acordado (USD) *</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="10"
+                  required
+                  value={newExpenseForm.agreed}
+                  onChange={e => setNewExpenseForm({ ...newExpenseForm, agreed: Number(e.target.value), estimated: Number(e.target.value) })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Notas / Condiciones de Pago</label>
+                <textarea
+                  rows="2"
+                  placeholder="Seña 30%, saldo 15 días antes del evento..."
+                  value={newExpenseForm.notes}
+                  onChange={e => setNewExpenseForm({ ...newExpenseForm, notes: e.target.value })}
+                />
+              </div>
+
+              <div className="modal-actions">
+                <button type="button" className="btn-outline" onClick={() => setShowAddExpenseModal(false)}>Cancelar</button>
+                <button type="submit" className="btn-primary">Guardar Rubro</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL EDITAR RUBRO EXISTENTE */}
+      {editingExpense && (
+        <div className="modal-backdrop" onClick={() => setEditingExpense(null)}>
+          <div className="modal-dialog card-luxury" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="font-serif">Editar Rubro del Presupuesto</h3>
+              <button className="btn-close" onClick={() => setEditingExpense(null)}>✕</button>
+            </div>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              updateBudgetItem(editingExpense.id, editingExpense);
+              setEditingExpense(null);
+            }} className="modal-form">
+              <div className="form-group">
+                <label>Categoría</label>
+                <select
+                  className="select-custom"
+                  value={editingExpense.category}
+                  onChange={e => setEditingExpense({ ...editingExpense, category: e.target.value })}
+                  style={{ width: '100%', padding: '0.65rem' }}
+                >
+                  <option value="Salón & Jardines">Salón & Jardines</option>
+                  <option value="Catering & Bebidas">Catering & Bebidas</option>
+                  <option value="Fotografía & Video">Fotografía & Video</option>
+                  <option value="DJ, Música & Luces">DJ, Música & Luces</option>
+                  <option value="Vestimenta & Estilo">Vestimenta & Estilo</option>
+                  <option value="Ambientación & Flores">Ambientación & Flores</option>
+                  <option value="Invitaciones & Papelería">Invitaciones & Papelería</option>
+                  <option value="Otros">Otros</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Proveedor / Concepto</label>
+                <input
+                  type="text"
+                  required
+                  value={editingExpense.vendor}
+                  onChange={e => setEditingExpense({ ...editingExpense, vendor: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Monto Total Acordado (USD)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="10"
+                  required
+                  value={editingExpense.agreed}
+                  onChange={e => setEditingExpense({ ...editingExpense, agreed: Number(e.target.value), estimated: Number(e.target.value) })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Notas</label>
+                <textarea
+                  rows="2"
+                  value={editingExpense.notes || ''}
+                  onChange={e => setEditingExpense({ ...editingExpense, notes: e.target.value })}
+                />
+              </div>
+
+              <div className="modal-actions">
+                <button type="button" className="btn-outline" onClick={() => setEditingExpense(null)}>Cancelar</button>
+                <button type="submit" className="btn-primary">Actualizar Rubro</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL AÑADIR NUEVO PROVEEDOR */}
+      {showAddVendorModal && (
+        <div className="modal-backdrop" onClick={() => setShowAddVendorModal(false)}>
+          <div className="modal-dialog card-luxury" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className="modal-header">
+              <h3 className="font-serif">Añadir Nuevo Proveedor</h3>
+              <button className="btn-close" onClick={() => setShowAddVendorModal(false)}>✕</button>
+            </div>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              addVendor(newVendorForm);
+              setNewVendorForm({
+                name: '',
+                category: 'Catering & Bebidas',
+                phone: '',
+                email: '',
+                status: 'Confirmado',
+                contractUrl: 'Contrato.pdf',
+                notes: ''
+              });
+              setShowAddVendorModal(false);
+            }} className="modal-form">
+              <div className="form-group">
+                <label>Nombre de la Empresa / Profesional *</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="Ej. Estudio Fotográfico Lumière"
+                  value={newVendorForm.name}
+                  onChange={e => setNewVendorForm({ ...newVendorForm, name: e.target.value })}
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Rubro / Especialidad *</label>
+                  <select 
+                    className="select-custom"
+                    value={newVendorForm.category}
+                    onChange={e => setNewVendorForm({ ...newVendorForm, category: e.target.value })}
+                  >
+                    <option value="Salón & Jardines">Salón & Jardines</option>
+                    <option value="Catering & Bebidas">Catering & Bebidas</option>
+                    <option value="Fotografía & Video">Fotografía & Video</option>
+                    <option value="DJ & Iluminación">DJ & Iluminación</option>
+                    <option value="Ambientación & Flores">Ambientación & Flores</option>
+                    <option value="Vestimenta Nupcial">Vestimenta Nupcial</option>
+                    <option value="Música en Vivo">Música en Vivo</option>
+                    <option value="Otros">Otros</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Estado del Contrato</label>
+                  <select 
+                    className="select-custom"
+                    value={newVendorForm.status}
+                    onChange={e => setNewVendorForm({ ...newVendorForm, status: e.target.value })}
+                  >
+                    <option value="Confirmado">Confirmado</option>
+                    <option value="En Negociación">En Negociación</option>
+                    <option value="Presupuestado">Presupuestado</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Teléfono / WhatsApp</label>
+                  <input 
+                    type="text" 
+                    placeholder="+54 9 11 ..."
+                    value={newVendorForm.phone}
+                    onChange={e => setNewVendorForm({ ...newVendorForm, phone: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Email de Contacto</label>
+                  <input 
+                    type="email" 
+                    placeholder="contacto@proveedor.com"
+                    value={newVendorForm.email}
+                    onChange={e => setNewVendorForm({ ...newVendorForm, email: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Notas Privadas / Acuerdos</label>
+                <textarea 
+                  rows="2"
+                  placeholder="Incluye fotolibro de regalo, 2 fotógrafos presentes..."
+                  value={newVendorForm.notes}
+                  onChange={e => setNewVendorForm({ ...newVendorForm, notes: e.target.value })}
+                />
+              </div>
+
+              <div className="modal-actions">
+                <button type="button" className="btn-outline" onClick={() => setShowAddVendorModal(false)}>Cancelar</button>
+                <button type="submit" className="btn-primary">Guardar Proveedor</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL EDITAR PROVEEDOR EXISTENTE */}
+      {editingVendor && (
+        <div className="modal-backdrop" onClick={() => setEditingVendor(null)}>
+          <div className="modal-dialog card-luxury" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className="modal-header">
+              <h3 className="font-serif">Editar Proveedor</h3>
+              <button className="btn-close" onClick={() => setEditingVendor(null)}>✕</button>
+            </div>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              updateVendor(editingVendor.id, editingVendor);
+              setEditingVendor(null);
+            }} className="modal-form">
+              <div className="form-group">
+                <label>Nombre de la Empresa / Profesional *</label>
+                <input 
+                  type="text" 
+                  required
+                  value={editingVendor.name}
+                  onChange={e => setEditingVendor({ ...editingVendor, name: e.target.value })}
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Rubro / Especialidad *</label>
+                  <select 
+                    className="select-custom"
+                    value={editingVendor.category}
+                    onChange={e => setEditingVendor({ ...editingVendor, category: e.target.value })}
+                  >
+                    <option value="Salón & Jardines">Salón & Jardines</option>
+                    <option value="Catering & Bebidas">Catering & Bebidas</option>
+                    <option value="Fotografía & Video">Fotografía & Video</option>
+                    <option value="DJ & Iluminación">DJ & Iluminación</option>
+                    <option value="Ambientación & Flores">Ambientación & Flores</option>
+                    <option value="Vestimenta Nupcial">Vestimenta Nupcial</option>
+                    <option value="Música en Vivo">Música en Vivo</option>
+                    <option value="Otros">Otros</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Estado del Contrato</label>
+                  <select 
+                    className="select-custom"
+                    value={editingVendor.status}
+                    onChange={e => setEditingVendor({ ...editingVendor, status: e.target.value })}
+                  >
+                    <option value="Confirmado">Confirmado</option>
+                    <option value="En Negociación">En Negociación</option>
+                    <option value="Presupuestado">Presupuestado</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Teléfono / WhatsApp</label>
+                  <input 
+                    type="text" 
+                    value={editingVendor.phone || ''}
+                    onChange={e => setEditingVendor({ ...editingVendor, phone: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Email de Contacto</label>
+                  <input 
+                    type="email" 
+                    value={editingVendor.email || ''}
+                    onChange={e => setEditingVendor({ ...editingVendor, email: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Notas Privadas / Acuerdos</label>
+                <textarea 
+                  rows="2"
+                  value={editingVendor.notes || ''}
+                  onChange={e => setEditingVendor({ ...editingVendor, notes: e.target.value })}
+                />
+              </div>
+
+              <div className="modal-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <button 
+                  type="button" 
+                  className="btn-outline" 
+                  onClick={() => {
+                    if (window.confirm(`¿Estás seguro de eliminar al proveedor "${editingVendor.name}"?`)) {
+                      deleteVendor(editingVendor.id);
+                      setEditingVendor(null);
+                    }
+                  }}
+                  style={{ color: '#DC2626', borderColor: '#FCA5A5' }}
+                >
+                  Eliminar Proveedor
+                </button>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button type="button" className="btn-outline" onClick={() => setEditingVendor(null)}>Cancelar</button>
+                  <button type="submit" className="btn-primary">Guardar Cambios</button>
+                </div>
               </div>
             </form>
           </div>

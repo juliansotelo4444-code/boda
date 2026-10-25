@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Calendar, CheckCircle, AlertTriangle, ArrowRight, DollarSign, Users, Sparkles, Heart, Camera } from 'lucide-react';
+import { Clock, Calendar, CheckCircle, AlertTriangle, ArrowRight, DollarSign, Users, Sparkles, Heart, Camera, Edit2, Trash2 } from 'lucide-react';
 import { useWedding } from '../context/WeddingContext';
 import { ProfilePhotoModal } from './ProfilePhotoModal';
+import { EditWeddingModal } from './EditWeddingModal';
 
 export const Dashboard = ({ setActiveTab, setViewMode }) => {
-  const { data, toggleTask } = useWedding();
+  const { data, toggleTask, deleteTask } = useWedding();
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
+  const [isEditWeddingModalOpen, setIsEditWeddingModalOpen] = useState(false);
   const targetDate = new Date(data.couple?.date || '2027-10-09T18:00:00');
 
   // Cálculo de cuenta regresiva
@@ -103,10 +105,17 @@ export const Dashboard = ({ setActiveTab, setViewMode }) => {
             </button>
             <button
               className="btn-secondary"
+              onClick={() => setIsEditWeddingModalOpen(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            >
+              <Edit2 size={15} /> Editar Datos Boda
+            </button>
+            <button
+              className="btn-secondary"
               onClick={() => setIsPhotoModalOpen(true)}
               style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
             >
-              <Camera size={15} /> Cambiar Foto Portada / Perfil
+              <Camera size={15} /> Cambiar Fotos
             </button>
           </div>
         </div>
@@ -115,6 +124,11 @@ export const Dashboard = ({ setActiveTab, setViewMode }) => {
       <ProfilePhotoModal
         isOpen={isPhotoModalOpen}
         onClose={() => setIsPhotoModalOpen(false)}
+      />
+
+      <EditWeddingModal
+        isOpen={isEditWeddingModalOpen}
+        onClose={() => setIsEditWeddingModalOpen(false)}
       />
 
       {/* GRILLA PRINCIPAL DE WIDGETS */}
@@ -220,6 +234,24 @@ export const Dashboard = ({ setActiveTab, setViewMode }) => {
                       <span className="task-due">📅 {task.dueDate}</span>
                     </div>
                   </div>
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`¿Eliminar la tarea "${task.title}"?`)) {
+                        deleteTask(task.id);
+                      }
+                    }}
+                    title="Eliminar tarea"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: 'var(--text-muted)',
+                      padding: '0.2rem 0.4rem',
+                      marginLeft: 'auto'
+                    }}
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               ))
             )}
